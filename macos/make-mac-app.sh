@@ -21,7 +21,10 @@ iconutil -c icns "$SET" -o "$ICNS"
 # mk_app <tên> <id> — tạo bộ khung .app; chương trình chạy do hàm gọi tự ghi vào Contents/MacOS/ScanApp
 mk_app() {
   local app="$DEST/$1.app"
-  rm -rf "$app"; mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+  # macOS (App Management) có thể không cho Terminal xoá bản app cũ → nhờ Finder bỏ vào Thùng rác
+  rm -rf "$app" 2>/dev/null || osascript -e "tell application \"Finder\" to delete POSIX file \"$app\"" >/dev/null 2>&1 || true
+  if [ -e "$app" ]; then echo "Không xoá được bản cũ: $app" >&2; echo "→ Kéo ScanApp trên Desktop vào Thùng rác rồi chạy lại file này." >&2; exit 1; fi
+  mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
   cp "$ICNS" "$app/Contents/Resources/ScanApp.icns"
   cat > "$app/Contents/Info.plist" <<P
 <?xml version="1.0" encoding="UTF-8"?>
@@ -51,7 +54,6 @@ else
   echo "Không biên dịch được cửa sổ ScanApp (thiếu Xcode Command Line Tools?). Chạy: xcode-select --install" >&2
   cat /tmp/scanapp-swiftc.log >&2; exit 1
 fi
-codesign --force --sign - "$APP" >/dev/null 2>&1 || true
 touch "$APP"
 
 echo "Đã tạo trong $DEST:"
