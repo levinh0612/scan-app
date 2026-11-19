@@ -211,14 +211,14 @@ log "B4. Khởi động"
 # =============================================================================
 if is_running; then
   log "Server đang chạy (PID $(cat "$PID_FILE")) → restart"
-  ./stop.sh
+  ./stop.sh --keep-tunnel
 else
   log "Server chưa chạy → start"
 fi
 
 if ! start_server; then
   warn "Server không lên được. 20 dòng log cuối:"; tail -n 20 "$LOG_FILE" >&2 || true
-  ./stop.sh || true
+  ./stop.sh --keep-tunnel || true
   if [ "$PULLED" -eq 1 ]; then
     rollback_code
     log "Thử chạy lại bản cũ..."
@@ -241,10 +241,14 @@ if [ "$TUNNEL" = "1" ]; then
   if ! command -v cloudflared >/dev/null 2>&1; then
     warn "Chưa có cloudflared nên không tạo được link https. Cài: brew install cloudflared"
   else
+    if [ -f "$RUN_DIR/tunnel.pid" ] && kill -0 "$(cat "$RUN_DIR/tunnel.pid")" 2>/dev/null && grep -aqE 'trycloudflare\.com' "$LOG_DIR/tunnel.log" 2>/dev/null; then
+      :   # tunnel đang chạy từ lần trước → giữ nguyên để link không đổi (cập nhật tự động chạy lại run.sh định kỳ)
+    else
     : > "$LOG_DIR/tunnel.log"
     # Vòng giám sát: Cloudflare hay từ chối tạm thời (429 khi tạo link liên tục) hoặc tunnel rớt → tự thử lại sau 20 giây, không cần chạy lại run.sh
     nohup bash -c 'while true; do cloudflared tunnel "$@" 2>&1; sleep 20; : > "$0"; done' "$LOG_DIR/tunnel.log" $([ "$HTTPS" = "1" ] && echo --no-tls-verify) --url "${SCHEME}://localhost:${PORT}" >> "$LOG_DIR/tunnel.log" 2>&1 &
     echo $! > "$RUN_DIR/tunnel.pid"
+    fi
     URL=""
     printf "   Link https  đang tạo (chờ vài giây)"
     for _ in $(seq 1 100); do                       # kiểm tra mỗi 0,3 giây, tối đa 30 giây

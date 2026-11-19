@@ -43,60 +43,36 @@ Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), t
 | Quét giấy tờ | Trên điện thoại: tab **Hồ sơ mới** → chụp CCCD, cà vẹt |
 | Xem lỗi / link / log | Bấm icon **ScanApp Cài đặt** (cho người cài) |
 
-Trên máy Windows đã chạy `install.cmd`, server tự chạy khi bật máy nên chỉ cần bấm **ScanApp**.
+Trên máy Windows đã chạy `Cai-Dat.cmd`, server tự chạy khi bật máy nên chỉ cần bấm **ScanApp**.
 
 ---
 
-## 3. Cài trên macOS (đã thử)
+## 3. Cài đặt (làm MỘT lần)
 
-```bash
-git clone https://github.com/levinh0612/scan-app.git && cd scan-app
-./run.sh                # lần đầu: cài Python/thư viện (vài phút) rồi chạy. Hiện QR + link
-./make-mac-app.sh       # tạo 2 icon ngoài Desktop
-```
+Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
-`make-mac-app.sh` tạo (nhận đường dẫn khác làm tham số, vd `/Applications`):
+| Máy | Lấy code | Bấm đúp |
+|---|---|---|
+| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`Cai-Dat.command`** |
+| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`Cai-Dat.cmd`** (chọn Yes khi Windows hỏi quyền) |
 
-- **ScanApp.app** — bấm đúp: nếu server chưa chạy thì tự bật (qua một cửa sổ Terminal thu nhỏ, tự đóng), rồi mở app trên trình duyệt. Mất khoảng 6–30 giây.
-  (macOS không cho app mở từ Finder đọc thư mục `~/Documents`, nên việc khởi động giao cho Terminal.)
-- **ScanApp Cài đặt.app** — mở Terminal chạy `./run.sh` (menu, QR + link, log).
+Xong là có icon **ScanApp** ngoài Desktop; mở lên là dùng. Điện thoại quét QR ở đầu trang app (link https, không cần cùng wifi).
 
-Nếu thư mục `scan-app` bị di chuyển, chạy lại `./make-mac-app.sh`. Lần đầu macOS có thể hỏi quyền điều khiển Terminal → chọn OK.
-Dừng server: `./stop.sh`. Log: `logs/server.log`, `logs/launcher.log`.
+**Mac** — `Cai-Dat.command` cài môi trường, chạy thử, tạo 2 icon: **ScanApp** (tự bật server ngầm rồi mở app, 6–30 giây)
+và **ScanApp Cài đặt** (QR + link + log). macOS không cho app mở từ Finder đọc `~/Documents` nên việc khởi động giao cho Terminal
+(lần đầu có thể hỏi quyền điều khiển Terminal → OK). Dời thư mục `scan-app` thì bấm lại `Cai-Dat.command`.
 
----
-
-## 4. Cài trên Windows 10/11 (chưa thử trên máy thật)
-
-**Chuẩn bị:** Windows 10 bản 1809 trở lên hoặc Windows 11, có internet. Cài **Git** (`winget install --id Git.Git -e`).
-
-```powershell
-git clone https://github.com/levinh0612/scan-app.git C:\scan-app
-cd C:\scan-app
-.\install.cmd          # bấm đúp cũng được; chọn Yes khi Windows hỏi quyền Administrator
-```
-
-`install.cmd` (chạy MỘT lần) làm:
-1. Kiểm tra phiên bản Windows.
-2. Cài môi trường (Python, thư viện, VC++ runtime) và chạy thử.
-3. Mở firewall cho cổng (chỉ mạng Private/Domain).
-4. Tạo 2 tác vụ chạy ngầm bằng quyền SYSTEM: **ScanApp** (bật máy 30 giây sau là chạy) và **ScanApp-Update**
-   (mỗi 30 phút kéo code mới từ GitHub, kiểm tra, restart; bản mới lỗi thì **tự quay về bản cũ**; đang có lệnh in chờ thì hoãn).
-5. Tạo 2 icon **ScanApp** và **ScanApp - Cai dat** ở Desktop và Start Menu.
-
-Tuỳ chọn: `.\install.cmd -Port 9000`, `-NoHttps`, `-Token` (dán mã GitHub chỉ-đọc nếu sau này đổi repo sang private).
-Gỡ: `.\uninstall.cmd`. Chỉ tạo lại icon: `.\make-shortcut.cmd`.
-
-> `install.ps1` hiện mặc định chạy **https chứng chỉ tự ký trong wifi** (điện thoại phải bấm "Nâng cao → Tiếp tục"),
-> chưa dùng tunnel Cloudflare như macOS. Nhiều router chặn điện thoại ↔ máy tính (client isolation) khiến cách này không vào được.
-> Việc đồng bộ Windows với tunnel còn trong lộ trình.
+**Windows** — `Cai-Dat.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
+và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restart giữ nguyên link; bản mới lỗi thì tự quay về bản cũ;
+đang có lệnh in chờ thì hoãn). Tuỳ chọn: `-Port 9000`, `-Https` (https tự ký trong wifi thay vì link internet), `-Token` (repo private).
+Gỡ: `uninstall.cmd`. Chỉ tạo lại icon: `make-shortcut.cmd`.
 
 **Máy in:** cài driver, đặt khổ giấy mặc định **A5 dọc**; trong hộp thoại in của Chrome/Edge: lề **None**, tỉ lệ **100%**,
 tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong router và tắt Sleep.
 
 ---
 
-## 5. Lệnh chạy tay
+## 4. Lệnh chạy tay
 
 | Việc | macOS / Linux | Windows |
 |---|---|---|
@@ -122,7 +98,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 
 ---
 
-## 6. Xử lý sự cố
+## 5. Xử lý sự cố
 
 | Triệu chứng | Cách xử lý |
 |---|---|
@@ -138,7 +114,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 
 ---
 
-## 7. Bảo mật và dữ liệu cá nhân
+## 6. Bảo mật và dữ liệu cá nhân
 
 - Ảnh CCCD là dữ liệu cá nhân (Nghị định 13/2023). App không lưu ảnh, không gọi dịch vụ OCR ngoài. Log mặc định **che nội dung**
   (chỉ ghi dạng ký tự). Bật `SCAN_DEBUG=1` mới ghi chữ gốc, và phải **xoá log sau khi dùng**.
@@ -149,7 +125,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 
 ---
 
-## 8. Cấu trúc
+## 7. Cấu trúc
 
 ```
 scan-app/
@@ -166,9 +142,9 @@ scan-app/
 ├── run.sh / stop.sh      # macOS/Linux (trong Git Bash tự chuyển sang PowerShell)
 ├── run.cmd / run.ps1     # Windows: cài + cập nhật + chạy
 ├── stop.cmd / stop.ps1   # Windows: dừng
-├── install.cmd/.ps1      # Windows: cài tự chạy + tự cập nhật + icon (một lần)
+├── Cai-Dat.command       # Mac: bấm đúp để cài (run.sh + make-mac-app.sh)
+├── Cai-Dat.cmd / install.ps1   # Windows: bấm đúp để cài tự chạy + tự cập nhật + icon
 ├── uninstall.cmd/.ps1    # Windows: gỡ
-├── setup-autostart.ps1   # Windows: cách tự chạy đời cũ (đã được install.ps1 thay thế)
 ├── make-mac-app.sh       # macOS: tạo ScanApp.app + ScanApp Cài đặt.app
 ├── tunnel.ps1            # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
 ├── make-shortcut.cmd/.ps1 + open-app.ps1   # Windows: tạo 2 icon; việc icon ScanApp làm
@@ -179,7 +155,7 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 
 ---
 
-## 9. Giới hạn đã biết
+## 8. Giới hạn đã biết
 
 - OCR (RapidOCR) **không có dấu tiếng Việt**: họ tên từ OCR luôn bị đánh dấu vàng. Ưu tiên lấy từ QR.
 - QR cà vẹt chỉ cho biển số, không có số khung/số máy → phải OCR (hay nhầm O/0, I/1, B/8, F/P).
@@ -192,7 +168,7 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 - Link tunnel đổi mỗi lần chạy lại, công khai, chưa có PIN. Tunnel tự thử lại (20 giây/lần) khi Cloudflare từ chối hoặc rớt.
 - Script Windows (kể cả `tunnel.ps1`) chưa kiểm chứng trên máy thật; `install.ps1` chưa bật tunnel khi mở máy.
 
-## 10. Lộ trình
+## 9. Lộ trình
 
 1. Thêm mã PIN cho link công khai.
 2. Đồng bộ Windows với tunnel Cloudflare (tự cài `cloudflared`, bật khi mở máy); thử trên máy Windows thật.

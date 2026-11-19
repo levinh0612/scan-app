@@ -1,4 +1,5 @@
 ﻿# stop.ps1 - dừng server (Windows)
+param([switch]$KeepTunnel)   # -KeepTunnel: restart server mà giữ nguyên link https
 $ErrorActionPreference = 'Continue'
 Set-Location -LiteralPath $PSScriptRoot
 $Port = 8000; if ($env:PORT) { $Port = [int]$env:PORT }
@@ -17,7 +18,7 @@ function Kill-Tree($id) {
 }
 
 $TunPid = Join-Path $PSScriptRoot '.run\tunnel.pid'   # tắt tunnel https (nếu run -Tunnel đã mở)
-if (Test-Path $TunPid) {
+if (-not $KeepTunnel -and (Test-Path $TunPid)) {
     $tid = [int](Get-Content $TunPid -ErrorAction SilentlyContinue)
     if ($tid) { & taskkill.exe /PID $tid /T /F *> $null }
     Remove-Item $TunPid -Force -ErrorAction SilentlyContinue

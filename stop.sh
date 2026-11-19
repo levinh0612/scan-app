@@ -28,7 +28,7 @@ stop_pid() {
 }
 
 STOPPED=0
-if [ -f ".run/tunnel.pid" ]; then          # tắt tunnel https (nếu run.sh --tunnel đã mở)
+if [ "${1:-}" != "--keep-tunnel" ] && [ -f ".run/tunnel.pid" ]; then   # tắt tunnel https; --keep-tunnel = restart server mà giữ nguyên link
   TP="$(cat .run/tunnel.pid)"; pkill -P "$TP" 2>/dev/null; kill "$TP" 2>/dev/null; rm -f .run/tunnel.pid   # vòng giám sát + cloudflared con
 fi
 if [ -f "$PID_FILE" ]; then

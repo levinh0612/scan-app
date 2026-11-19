@@ -1,10 +1,11 @@
 ﻿# install.ps1 - cài chạy tự động trên Windows 10/11 (chạy MỘT lần, bằng quyền Administrator)
 #   Việc làm:  kiểm tra Windows, cài môi trường + chạy thử, mở firewall (mạng riêng),
 #              tạo 2 tác vụ: ScanApp (bật máy là chạy) và ScanApp-Update (30 phút kiểm tra bản mới từ GitHub)
-# Dùng:  .\install.cmd            (bấm đúp, chọn Yes khi Windows hỏi quyền)
-#        .\install.cmd -Port 8000 -NoHttps -Token   (-Token: hỏi mã truy cập GitHub chỉ-đọc cho repo private)
+# Dùng:  bấm đúp Cai-Dat.cmd   (chọn Yes khi Windows hỏi quyền)
+#        Cai-Dat.cmd -Port 8000 -Https -Token   (-Https: thêm https tự ký thay cho link internet; -Token: mã GitHub chỉ-đọc cho repo private)
+# Mặc định: điện thoại vào bằng link https qua internet (cloudflared, tự cài), không cần cùng wifi.
 [CmdletBinding()]
-param([int]$Port = 8000, [switch]$NoHttps, [switch]$Token)
+param([int]$Port = 8000, [switch]$Https, [switch]$Token)
 
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
@@ -21,7 +22,7 @@ $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 if (-not $admin) {
     Say 'Cần quyền Administrator, đang xin lại...' Yellow
     $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-Port', $Port)
-    if ($NoHttps) { $a += '-NoHttps' }; if ($Token) { $a += '-Token' }
+    if ($Https) { $a += '-Https' }; if ($Token) { $a += '-Token' }
     Start-Process powershell -Verb RunAs -ArgumentList $a
     exit 0
 }
@@ -39,13 +40,22 @@ if ($Token -and (Get-Command git -ErrorAction SilentlyContinue)) {
 }
 
 # --- 4. Cài môi trường + chạy thử (không cập nhật, để nhanh) ---
-$httpsArg = if ($NoHttps) { @() } else { @('-Https') }
+# cloudflared: tạo link https công khai cho điện thoại (cài cho mọi người dùng để tác vụ SYSTEM cũng thấy)
+if (-not $Https -and -not (Get-Command cloudflared -ErrorAction SilentlyContinue)) {
+    Say 'Cài cloudflared (để điện thoại có link https)...'
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        & winget install --id Cloudflare.cloudflared -e --scope machine --silent --accept-package-agreements --accept-source-agreements | Out-Null
+        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+    }
+    if (-not (Get-Command cloudflared -ErrorAction SilentlyContinue)) { Say 'Chưa cài được cloudflared: chỉ dùng được qua wifi. Cài tay: winget install Cloudflare.cloudflared rồi chạy lại.' Yellow }
+}
+$modeArg = if ($Https) { @('-Https') } elseif (Get-Command cloudflared -ErrorAction SilentlyContinue) { @('-Tunnel') } else { @() }
 Say 'Cài môi trường và chạy thử lần đầu (có thể vài phút)...'
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'run.ps1') -NoPull -Port $Port @httpsArg
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'run.ps1') -NoPull -Port $Port @modeArg
 if ($LASTEXITCODE -ne 0) { Say 'Chạy thử thất bại, chưa tạo tác vụ tự động. Xem thông báo phía trên.' Red; exit 1 }
 
 # --- 5. Tác vụ tự chạy (SYSTEM: không cần ai đăng nhập, chạy ẩn) ---
-$flags = "-Auto -Port $Port" + $(if ($NoHttps) { '' } else { ' -Https' })
+$flags = "-Auto -Port $Port" + $(if ($modeArg.Count) { ' ' + $modeArg[0] } else { '' })
 $cmd = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $PSScriptRoot 'run.ps1')`" $flags"
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $cmd -WorkingDirectory $PSScriptRoot
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest

@@ -145,7 +145,7 @@ function Start-Server {
     }
     return $false
 }
-function Stop-Server { & (Join-Path $PSScriptRoot 'stop.ps1') | Out-Null }
+function Stop-Server { & (Join-Path $PSScriptRoot 'stop.ps1') -KeepTunnel | Out-Null }
 
 # =============================================================================
 Log 'B1. Chuẩn bị tài nguyên'
@@ -264,9 +264,13 @@ if ($Tunnel) {
         Warn 'Chưa có cloudflared nên không tạo được link https. Cài: winget install Cloudflare.cloudflared'
     } else {
         $TunLog = Join-Path $LogDir 'tunnel.log'
+        $tpf = Join-Path $RunDir 'tunnel.pid'
+        $tunAlive = (Test-Path $tpf) -and (Get-Process -Id ([int](Get-Content $tpf)) -ErrorAction SilentlyContinue) -and (Test-Path $TunLog) -and (Select-String -Path $TunLog -Pattern 'trycloudflare\.com' -Quiet -ErrorAction SilentlyContinue)
+        if (-not $tunAlive) {   # đang chạy từ lần trước thì giữ nguyên để link không đổi (tác vụ cập nhật chạy lại run.ps1 định kỳ)
         Remove-Item $TunLog -Force -ErrorAction SilentlyContinue
         $tp = Start-Process powershell.exe -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', (Join-Path $PSScriptRoot 'tunnel.ps1'), '-Port', $Port) + $(if ($Https) { '-Https' } else { @() })) -WindowStyle Hidden -PassThru   # vòng giám sát: tự thử lại khi Cloudflare từ chối/rớt
         $tp.Id | Set-Content (Join-Path $RunDir 'tunnel.pid')
+        }
         $url = $null
         for ($i = 0; $i -lt 30 -and -not $url; $i++) {
             Start-Sleep -Seconds 1
