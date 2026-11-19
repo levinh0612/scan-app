@@ -49,14 +49,14 @@ Trên máy Windows đã chạy `RUN_THIS_FILE_WIN.cmd`, server tự chạy khi b
 
 ## 3. Cài đặt (làm MỘT lần)
 
-> **Chỉ cần nhớ 1 file:** Mac → `macos/RUN_THIS_FILE_MACOS.command`, Windows → `windows/RUN_THIS_FILE_WIN.cmd`. Các file còn lại là "ruột" để file đó tự gọi, không cần mở.
+> **Chỉ cần nhớ 1 file:** Mac → `RUN_THIS_FILE_MACOS.command`, Windows → `RUN_THIS_FILE_WIN.cmd`. Các file còn lại là "ruột" để file đó tự gọi, không cần mở.
 
 Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
 | Máy | Lấy code | Bấm đúp |
 |---|---|---|
-| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`macos/RUN_THIS_FILE_MACOS.command`** |
-| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`windows\RUN_THIS_FILE_WIN.cmd`** (chọn Yes khi Windows hỏi quyền) |
+| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`RUN_THIS_FILE_MACOS.command`** |
+| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`RUN_THIS_FILE_WIN.cmd`** (chọn Yes khi Windows hỏi quyền) |
 
 Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa sổ ScanApp:
 
@@ -66,7 +66,7 @@ Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa
 
 **Mac** — `RUN_THIS_FILE_MACOS.command` chỉ tạo icon (biên dịch cửa sổ Swift, cần Xcode Command Line Tools — đã có sẵn nếu máy có git) rồi mở nó.
 macOS không cho app mở từ Finder đọc `~/Documents` nên việc cài/chạy giao cho một cửa sổ Terminal thu nhỏ (lần đầu có thể hỏi quyền điều khiển Terminal → OK).
-Dời thư mục `scan-app` thì bấm lại `macos/RUN_THIS_FILE_MACOS.command`.
+Dời thư mục `scan-app` thì bấm lại `RUN_THIS_FILE_MACOS.command`.
 
 **Windows** — `RUN_THIS_FILE_WIN.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
 và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restart giữ nguyên link; bản mới lỗi thì tự quay về bản cũ;
@@ -147,16 +147,16 @@ scan-app/
 │   └── selfcheck.py      # bước B3 (cú pháp + test nếu có + import)
 ├── frontend/index.html   # giao diện: chụp, form, xem trước A5, Lệnh in, Kết nối
 ├── assets/               # icon (scanapp.png / .ico) + make_icon.py vẽ lại icon
+├── RUN_THIS_FILE_MACOS.command   # Mac: bấm đúp để cài (tạo icon ScanApp ra Desktop rồi mở)
+├── RUN_THIS_FILE_WIN.cmd         # Windows: bấm đúp để cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
 ├── scripts/              # "động cơ" chạy server (cài + cập nhật + chạy + dừng)
 │   ├── run.sh / stop.sh  # macOS/Linux (trong Git Bash tự chuyển sang PowerShell)
 │   ├── run.ps1 / stop.ps1  # Windows
 │   └── tunnel.ps1        # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
 ├── macos/                # icon + cửa sổ ScanApp trên Mac
-│   ├── RUN_THIS_FILE_MACOS.command   # bấm đúp: tạo icon ScanApp ra Desktop rồi mở
 │   ├── make-mac-app.sh   # biên dịch ScanApp.swift thành ScanApp.app
 │   └── ScanApp.swift     # cửa sổ native: tự cài / tự bật server / hiện QR + link
 ├── windows/              # icon + cửa sổ ScanApp trên Windows
-│   ├── RUN_THIS_FILE_WIN.cmd       # bấm đúp: cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
 │   ├── install.ps1 / uninstall.cmd / uninstall.ps1
 │   ├── make-shortcut.ps1 # tạo lại icon ScanApp
 │   └── open-app.ps1      # cửa sổ native (WinForms): tự cài / tự bật / hiện QR + link
