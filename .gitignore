@@ -1,0 +1,22 @@
+# Môi trường và rác
+.venv/
+__pycache__/
+*.pyc
+.run/
+logs/
+
+# DỮ LIỆU CÁ NHÂN — tuyệt đối không commit ảnh giấy tờ
+samples/
+uploads/
+*.jpg
+*.jpeg
+*.heic
+*.png
+!frontend/**/*.png
+.env
+!assets/*.png
+
+# Test + benchmark: chỉ giữ trên máy dev (có chuỗi mẫu giống dữ liệu thật) — không đưa lên GitHub
+backend/test_*.py
+backend/benchmark.py
+backend/bench/

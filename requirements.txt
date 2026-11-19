@@ -1,0 +1,10 @@
+rapidocr-onnxruntime
+opencv-python-headless
+fastapi
+uvicorn[standard]
+python-multipart
+pillow
+numpy
+zxing-cpp
+segno
+cryptography
