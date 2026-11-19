@@ -1,8 +1,11 @@
 """API quét giấy tờ — chạy hoàn toàn offline, ảnh chỉ xử lý trong RAM, không ghi đĩa."""
 from __future__ import annotations
 
+import io
 import os
 import re
+import subprocess
+import threading
 import unicodedata
 from pathlib import Path
 
@@ -12,7 +15,10 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+import layout
 import printers
+import printing
+import render
 from jobs import JobStore
 from validators import (check_cccd, check_plate, fix_vin_like, normalize_plate,
                         parse_cccd_qr)
@@ -48,6 +54,40 @@ def enhance(img: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
+def _unsharp(img: np.ndarray) -> np.ndarray:
+    return cv2.addWeighted(img, 1.6, cv2.GaussianBlur(img, (0, 0), 3), -0.6, 0)
+
+
+def _upscale(img: np.ndarray) -> np.ndarray:
+    return _unsharp(cv2.resize(enhance(img), None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC))
+
+
+# Các lượt đọc cà vẹt: mỗi lượt xử lý ảnh khác nhau để lỗi ngẫu nhiên của lượt này bị lượt kia sửa
+CAVET_RUNS = (("clahe", enhance, 1.0), ("raw", lambda im: im, 1.0), ("up", _upscale, 1.5))
+
+
+def read_cavet_multi(img: np.ndarray, qr: str | None, warnings: list, tag: str = "cavet"):
+    """Đọc cà vẹt nhiều lượt + bỏ phiếu từng ô + cắt ảnh đối chiếu. Trả (kết quả, dòng OCR lượt đầu)."""
+    import multiread
+    outs, all_lines = [], []
+    for name, pre, sc in CAVET_RUNS:
+        lines = run_ocr(img, f"{tag}:{name}", pre, sc)
+        o: dict = {}
+        parse_cavet(lines, qr, o, warnings if not outs else [])
+        outs.append(o)
+        all_lines.append(lines)
+    res = multiread.vote(outs)
+    b = res.get("bks") or {}
+    if b.get("value") and b.get("status") == "check" and b.get("agree") == b.get("of") and check_plate(b["value"]):
+        b["status"] = "ok"            # đúng khuôn dạng + mọi lượt đọc trùng nhau → bỏ cảnh báo 'máy không chắc'
+        b["note"] = f"{b['of']}/{b['of']} lượt đọc trùng, đúng khuôn dạng"
+    nh = res.get("nhan_hieu") or {}
+    if nh.get("value") and nh.get("status") == "check" and nh.get("agree") == nh.get("of") and BRANDS.search(fold(nh["value"])):
+        nh["status"], nh["note"] = "ok", f"{nh['of']}/{nh['of']} lượt đọc trùng, đúng tên hãng"
+    multiread.attach_crops(res, all_lines, img)
+    return res, all_lines[0]
+
+
 def read_qr(img: np.ndarray) -> str | None:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     try:                                    # zxing-cpp đọc QR dày/nghiêng tốt hơn OpenCV
@@ -72,16 +112,17 @@ def read_qr(img: np.ndarray) -> str | None:
 
 # ---------------- OCR ----------------
 class Line:
-    def __init__(self, text: str, score: float, box):
+    def __init__(self, text: str, score: float, box, scale: float = 1.0):
         self.text, self.score = text.strip(), float(score)
-        ys = [p[1] for p in box]
-        xs = [p[0] for p in box]
+        ys = [p[1] / scale for p in box]          # scale: ảnh đưa vào OCR đã phóng to bao nhiêu lần so với ảnh gốc
+        xs = [p[0] / scale for p in box]
         self.y, self.x = sum(ys) / 4, min(xs)
+        self.box = (min(xs), min(ys), max(xs), max(ys))
 
 
-def run_ocr(img: np.ndarray, tag: str = "") -> list[Line]:
-    res, _ = get_ocr()(enhance(img))
-    lines = [Line(t, s, b) for b, t, s in (res or [])]
+def run_ocr(img: np.ndarray, tag: str = "", pre=None, scale: float = 1.0) -> list[Line]:
+    res, _ = get_ocr()((pre or enhance)(img))
+    lines = [Line(t, s, b, scale) for b, t, s in (res or [])]
     lines = sorted(lines, key=lambda l: (round(l.y / 12), l.x))
     if os.environ.get("SCAN_DEBUG") == "1":   # chỉ bật khi cần dò lỗi; chứa dữ liệu cá nhân, xoá log sau khi dùng
         print(f"[OCR {tag}]", *[f"{l.score:.2f} | {l.text}" for l in lines], sep="\n", flush=True)
@@ -219,8 +260,8 @@ def fix_honda_ids(khung: str, may: str, loai: str):
 
 
 def valid_engine(v: str) -> bool:
-    """Số máy thật: 7–16 ký tự chữ+số, có ≥4 chữ số. Loại chuỗi rác toàn chữ (lọt từ dòng nhãn khác)."""
-    return bool(v) and 7 <= len(v) <= 16 and sum(c.isdigit() for c in v) >= 4 and bool(re.fullmatch(r"[A-Z0-9]+", v))
+    """Số máy thật: 7–16 ký tự chữ+số (ô tô có thể có dấu '-', vd L15Z1-1234567), có ≥4 chữ số. Loại chuỗi rác toàn chữ (lọt từ dòng nhãn khác)."""
+    return bool(v) and 7 <= len(v) <= 16 and sum(c.isdigit() for c in v) >= 4 and bool(re.fullmatch(r"[A-Z0-9\-]+", v))
 
 
 ENGINE_RX = re.compile(r"\b([A-Z]{1,3}\d{2}[A-Z]?\d{5,8}|[A-Z0-9]{9,14})\b")
@@ -380,7 +421,7 @@ def _match_mau(k: str) -> str | None:
 
 
 def fix_mau(v: str) -> str:
-    """OCR mất dấu / sai chữ: 'Do,Xum' hay 'đỏ xm' → 'Đỏ, Xám'; 'Xanh la' → 'Xanh lá'."""
+    """OCR mất dấu / sai chữ: 'Do,Xum' hay 'đỏ xm' → 'Đỏ Xám' (cách nhau bằng dấu cách, như trên thẻ); 'Xanh la' → 'Xanh lá'."""
     out: list[str] = []
     for w in re.split(r"[\s,;/]+", v.strip()):
         if not w:
@@ -391,7 +432,7 @@ def fix_mau(v: str) -> str:
             out[-1] += " " + word
         else:
             out.append(word)
-    return ", ".join(out)
+    return " ".join(out)
 
 
 def tidy_val(v: str) -> str:
@@ -498,9 +539,9 @@ async def scan(cccd_front: UploadFile | None = File(None), cccd_back: UploadFile
     if imgs["front"] is not None or imgs["back"] is not None:
         parse_cccd(f_lines, b_lines, qr_cccd, out, warnings)
     if imgs["cavet"] is not None:
-        c_lines = run_ocr(imgs["cavet"], "cavet")
+        cv_out, c_lines = read_cavet_multi(imgs["cavet"], qr_cavet, warnings)
         trace("cavet", imgs["cavet"], c_lines, qr_cavet)
-        parse_cavet(c_lines, qr_cavet, out, warnings)
+        out.update(cv_out)
     for tag, im, ln in (("front", imgs["front"], f_lines), ("back", imgs["back"], b_lines)):
         if im is not None:
             trace(tag, im, ln, qr_cccd)
@@ -591,6 +632,25 @@ def printer_status():
     return printers.cached()
 
 
+@app.post("/api/shutdown")
+def shutdown(request: Request):
+    """Dừng cả server + link https. Chỉ nhận từ chính máy này: chặn lệnh đi qua tunnel Cloudflare / proxy (có header chuyển tiếp)."""
+    proxied = any(h in request.headers for h in ("cf-connecting-ip", "x-forwarded-for", "cf-ray", "forwarded"))
+    if proxied or (request.client.host if request.client else "") not in ("127.0.0.1", "::1"):
+        raise HTTPException(403, "Chỉ dừng được từ máy chủ")
+    run = ROOT / ".run"
+    run.mkdir(exist_ok=True)
+    (run / "stopped").write_text("1")          # để tác vụ tự cập nhật không bật lại
+    if os.name == "nt":                        # Start-Process để script dừng không nằm trong cây tiến trình bị taskkill /T
+        cmd = ["powershell", "-NoProfile", "-Command",
+               f"Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','{ROOT / 'scripts' / 'stop.ps1'}'"]
+        subprocess.Popen(cmd, creationflags=0x08000000)
+    else:
+        subprocess.Popen(["/bin/bash", str(ROOT / "scripts" / "stop.sh"), "--fast"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return {"ok": True}
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
@@ -643,6 +703,43 @@ async def update_job(jid: str, request: Request):
     if job is None:
         raise HTTPException(404, "Không tìm thấy lệnh in")
     return job
+
+
+@app.post("/api/jobs/{jid}/print")
+def print_job(jid: str):
+    """Máy chủ tự gửi lệnh in tới máy in (không hộp thoại). Kết quả cập nhật dần vào trạng thái lệnh."""
+    snap = store.snapshot(jid)
+    if snap is None:
+        raise HTTPException(404, "Không tìm thấy lệnh in (có thể đã hết hạn)")
+    job = store.update(jid, "dang_in")
+    threading.Thread(target=printing.run_job, args=(store, jid, snap), daemon=True).start()
+    return job
+
+
+@app.post("/api/jobs/{jid}/cancel")
+def cancel_job(jid: str):
+    """Huỷ lệnh đang gửi tới máy in (chỉ khi còn trong hàng đợi máy in; đã ra khỏi hàng đợi thì không huỷ được)."""
+    if store.snapshot(jid) is None:
+        raise HTTPException(404, "Không tìm thấy lệnh in")
+    printing.request_cancel(jid)
+    return {"ok": True}
+
+
+@app.get("/api/jobs/{jid}/preview.png")
+def job_preview(jid: str):
+    """Ảnh đúng như sẽ in (nền trắng, chỉ phần điền vào) — để kiểm tra trước."""
+    snap = store.snapshot(jid)
+    if snap is None:
+        raise HTTPException(404, "Không tìm thấy lệnh in")
+    return _preview(snap)
+
+
+def _preview(snap: dict) -> Response:
+    tpl, cfg = layout.load_template(), printing.load_config()
+    img, _ = render.render(layout.build_items(snap, tpl), tpl["page"], cfg["dx"], cfg["dy"])
+    buf = io.BytesIO()
+    render.save_png(img, buf)
+    return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @app.delete("/api/jobs/{jid}")

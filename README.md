@@ -5,6 +5,9 @@ app tự điền vào "HỢP ĐỒNG CẦM ĐỒ", đánh dấu ô thiếu/khôn
 
 - Repo: https://github.com/levinh0612/scan-app (**public**)
 - **Đọc giấy tờ offline:** OCR + QR chạy ngay trên máy tính trong tiệm. Ảnh chỉ xử lý trong RAM, **không lưu, không gửi đi đâu**.
+- **Camera hỗ trợ quét:** có khung ngắm, báo độ nét và hiện kết quả đọc ngay khi ngắm. Khi ảnh nét và các ô chính đọc **giống nhau 3 lần liên tiếp** thì hiện "tự chụp sau 2s" (có nút Huỷ); nút chụp tay luôn dùng được. Có nút đèn flash và lấy nét liên tục nếu máy hỗ trợ.
+- **Cà vẹt đọc 3 lượt:** mỗi ô lấy giá trị nhiều lượt trùng nhất; lượt bất đồng thì báo "check" kèm giá trị khác. Dưới ô số máy/số khung/màu sơn/biển số/nhãn hiệu có **ảnh cắt chữ trên thẻ** để đối chiếu (không lưu, không in).
+- **Ô tô:** đã thử bằng dữ liệu giả lập (biển 4–5 số, số máy có dấu `-`, VIN 17 ký tự); **chưa kiểm chứng trên cà vẹt ô tô thật**.
 - **Chưa lưu hồ sơ.** Hàng đợi lệnh in nằm trong RAM, tắt server là mất.
 
 > **Tình trạng thật:** đã chạy thử trên **macOS** (đọc thử vài giấy tờ thật, quét bằng iPhone qua link https).
@@ -74,8 +77,13 @@ và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restar
 Tuỳ chọn: `-Port 9000`, `-Https` (https tự ký trong wifi thay vì link internet), `-Token` (repo private).
 Gỡ: `windows\uninstall.cmd`. Chỉ tạo lại icon: `powershell -File windows\make-shortcut.ps1`.
 
-**Máy in:** cài driver, đặt khổ giấy mặc định **A5 dọc**; trong hộp thoại in của Chrome/Edge: lề **None**, tỉ lệ **100%**,
-tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong router và tắt Sleep.
+**Máy in:** thêm máy in wifi vào Windows/macOS như bình thường (đặt làm mặc định). ScanApp tự in thẳng khổ **A5**, không hiện hộp thoại,
+chỉ in phần điền vào (giấy mẫu in sẵn đặt trong khay). Chạy với mọi máy có driver (phun, laser, máy kim). Trạng thái lấy từ hàng đợi in thật:
+Đang in → Đã gửi máy in; hết giấy/mất wifi quá 2 phút → Lỗi + lý do, lệnh bị huỷ để in lại không bị in đôi.
+Vị trí chữ nằm trong `backend/template.json` (mm từ góc giấy; hiện là toạ độ TẠM đo từ ảnh chụp nghiêng, cần đo lại bằng ảnh/bản quét chuẩn).
+Xem trước ảnh sẽ in: `/api/jobs/<id>/preview.png`. Tuỳ chọn trong `.run/print.json`: `printer` (tên máy in), `dx`/`dy` (mm, bù lệch cơ học),
+`mode: "escp"` + `host` (IP máy kim có card mạng, cổng 9100, **không dấu, chưa thử máy thật**). Ảnh in tạm trong thư mục tạm, xoá ngay khi in xong.
+Nên đặt IP cố định cho máy tính trong router và tắt Sleep.
 
 ---
 
@@ -184,6 +192,6 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 
 1. Thêm mã PIN cho link công khai.
 2. Đồng bộ Windows với tunnel Cloudflare (tự cài `cloudflared`, bật khi mở máy); thử trên máy Windows thật.
-3. Mua máy in, chỉnh vị trí in chồng lên mẫu in sẵn.
+3. Mua máy in, đo lại toạ độ `template.json` bằng giấy mẫu thật; thử chế độ driver trên Windows và `escp` trên máy kim thật.
 4. Đo độ chính xác trên nhiều giấy tờ thật hơn; chỉnh ngưỡng độ nét.
 5. Lưu hồ sơ, tìm kiếm, backup.

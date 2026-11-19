@@ -124,6 +124,8 @@ button,input,textarea{font:inherit;color:inherit}
 .f.check input,.f.check textarea{border-color:#e0a050;background:#fffaf0}
 .f.missing input,.f.missing textarea{border-color:#e36a7a;background:#fff8f8}
 .f input:focus,.f textarea:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 4px var(--blue-bg)}
+.pcrop{display:block;max-width:100%;max-height:64px;margin:4px 0 6px;border:1px solid var(--line,#ccc);border-radius:6px;background:#fff}
+@media print{.pcrop{display:none!important}}
 .f .note{margin-top:8px;font-size:var(--fs-small);color:var(--text2);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .f.missing .note{color:var(--bad);font-weight:600}.f.check .note{color:var(--warn);font-weight:600}
 .f .yes{min-height:44px;padding:0 20px;border-radius:22px;border:0;background:var(--warn);color:#fff;font-size:var(--fs-label);font-weight:600;cursor:pointer}
@@ -402,7 +404,8 @@ textarea.ei{height:auto;min-height:34px;resize:none;overflow:hidden;white-space:
 .camFrame i:nth-child(3){bottom:-2px;left:-2px;border-right:0;border-top:0;border-bottom-left-radius:16px}
 .camFrame i:nth-child(4){bottom:-2px;right:-2px;border-left:0;border-top:0;border-bottom-right-radius:16px}
 .camTop{position:relative;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;color:#fff;font-size:17px}
-.camTop span{width:40px}
+#camTorch[hidden]{display:block;visibility:hidden}
+.camCount{position:absolute;left:12px;right:12px;bottom:calc(120px + env(safe-area-inset-bottom));background:rgba(0,122,255,.92);color:#fff;border-radius:16px;padding:12px 14px;font-size:16px;text-align:center}.camCount button{margin-left:10px;border:0;border-radius:12px;padding:6px 14px;background:#fff;color:#007aff;font-size:15px}
 .camX{width:40px;height:40px;border-radius:20px;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:18px;backdrop-filter:blur(10px)}
 .camHint{position:absolute;left:0;right:0;top:calc(64px + env(safe-area-inset-top));margin:0;text-align:center;color:#fff;font-size:15px;text-shadow:0 1px 4px rgba(0,0,0,.6);padding:0 24px}
 .camLive{position:absolute;left:12px;right:12px;top:calc(var(--ftop) + var(--fw) / 1.586 + 14px);max-height:calc(100vh - var(--ftop) - var(--fw) / 1.586 - 14px - 128px - env(safe-area-inset-bottom));max-height:calc(100dvh - var(--ftop) - var(--fw) / 1.586 - 14px - 128px - env(safe-area-inset-bottom));overflow:auto;background:rgba(28,28,30,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-radius:18px;padding:8px 14px;color:#fff;font-size:15px;line-height:1.4}
@@ -486,8 +489,9 @@ body{padding-top:calc(52px + env(safe-area-inset-top))}
 <div id="cam" class="cam" hidden role="dialog" aria-modal="true" aria-labelledby="camTitle">
   <video id="camVideo" playsinline muted autoplay></video>
   <div class="camMask"><div class="camFrame" id="camFrame"><i></i><i></i><i></i><i></i></div></div>
-  <div class="camTop"><button type="button" id="camClose" class="camX" aria-label="Đóng">✕</button><b id="camTitle"></b><span></span></div>
+  <div class="camTop"><button type="button" id="camClose" class="camX" aria-label="Đóng">✕</button><b id="camTitle"></b><button type="button" id="camTorch" class="camX" aria-label="Đèn flash" hidden>🔦</button></div>
   <div class="camLive" id="camLive" hidden aria-live="polite"></div>
+  <div class="camCount" id="camCount" hidden aria-live="assertive"></div>
   <p class="camHint" id="camHint"></p>
   <div class="camBar"><button type="button" id="camShot" class="camShot" aria-label="Chụp"></button></div>
 </div>
@@ -607,8 +611,9 @@ const MAU_CHIPS=[['Đen','#1c1c1e'],['Trắng','#fff'],['Đỏ','#e53935'],['Xan
 document.body.insertAdjacentHTML('beforeend',`<div id="mauDlg" class="mdlg" hidden role="dialog" aria-modal="true" aria-labelledby="mauT"><div class="mcard"><h3 id="mauT">Chọn màu sơn</h3><p>Có thể chọn nhiều màu</p><div class="sw" id="sw">${MAU_CHIPS.map(([n,c])=>`<button type="button" data-c="${n}"><i style="background:${c}"></i>${n}</button>`).join('')}</div><div class="sw" id="swx"></div><div class="mother"><input id="mauOther" placeholder="Màu khác: gõ tên màu" autocomplete="off" enterkeyhint="done" aria-label="Màu khác"><button type="button" class="btn secondary" id="mauAdd">Thêm</button></div><div class="mact"><button type="button" class="btn secondary" id="mauClr">Xóa hết</button><button type="button" class="btn primary" id="mauOk">Xong</button></div></div></div>`);
 function openMau(){paintSw();$('#mauDlg').hidden=false;}
 function closeMau(){$('#mauDlg').hidden=true;}
-function setMau(w){const i=document.querySelector('#phieu [data-k="mau"]');if(!i)return;i.value=w.join(', ');i.dispatchEvent(new Event('input'));}
-const mauList=()=>(val('mau')||'').split(/\s*[,;/]\s*/).map(x=>x.trim()).filter(Boolean);   // tách theo dấu phẩy: 'Xanh lá' giữ nguyên
+function setMau(w){const i=document.querySelector('#phieu [data-k="mau"]');if(!i)return;i.value=w.join(' ');i.dispatchEvent(new Event('input'));}
+const MAU_MOD=/^(đậm|nhạt|lá|dương|chuối|ngọc|trơ)$/i;
+const mauList=()=>{const o=[];for(const w of (val('mau')||'').split(/[\s,;/]+/).filter(Boolean)){if(o.length&&MAU_MOD.test(w))o[o.length-1]+=' '+w;else o.push(w);}return o;};   // tách theo dấu phẩy: 'Xanh lá' giữ nguyên
 document.querySelectorAll('#sw button').forEach(b=>b.onclick=()=>{const w=mauList(),c=b.dataset.c,at=w.indexOf(c);if(at>=0)w.splice(at,1);else w.push(c);setMau(w);paintSw();});
 function addMau(){const t=$('#mauOther'),v=t.value.trim().replace(/[,;]+/g,' ');if(!v)return;const w=mauList();if(!w.some(x=>x.toLowerCase()===v.toLowerCase()))w.push(v.charAt(0).toUpperCase()+v.slice(1));setMau(w);t.value='';paintSw();}
 $('#mauAdd').onclick=addMau;$('#mauOther').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMau();}});
@@ -624,7 +629,7 @@ function autoGrow(t){t.style.height='auto';t.style.height=t.scrollHeight+'px';}
 function dateIn(k){const s=st(k),p=(s.value||'').split('/');
   const one=(i,cls,max,ph)=>`<input class="ei ${s.status} ${cls}" data-dk="${k}" data-p="${i}" value="${esc(p[i]||'')}" inputmode="numeric" maxlength="${max}" placeholder="${ph}" autocomplete="off" aria-label="${esc(LBL[k])} — ${['ngày','tháng','năm'][i]}">`;
   return `${one(0,'d2',2,'ng')}<label>tháng</label>${one(1,'d2',2,'th')}<label>năm</label>${one(2,'d4',4,'năm')}`;}
-const note=k=>`<div class="pnote" id="n-${k}"></div>`;
+const note=k=>`<div class="pnote" id="n-${k}"></div><img class="pcrop" id="c-${k}" alt="Chữ trên giấy tờ" hidden>`;
 function renderPhieu(){
   const [dd,mm,yy]=today().split('/');
   $('#phieu').innerHTML=`<h3 class="pt">HỢP ĐỒNG CẦM ĐỒ</h3><div class="psub">( Kiêm Phiếu Chi Tiền )</div>
@@ -691,7 +696,9 @@ function paintSw(){const w=mauList();document.querySelectorAll('#sw button').for
   const x=$('#swx');if(!x)return;const cat=MAU_CHIPS.map(c=>c[0]);
   x.innerHTML=w.filter(c=>!cat.includes(c)).map(c=>`<button type="button" class="on" data-x="${esc(c)}">${esc(c)} ✕</button>`).join('');   // màu ngoài danh sách: bấm để bỏ
   x.querySelectorAll('button').forEach(b=>b.onclick=()=>{setMau(mauList().filter(y=>y!==b.dataset.x));paintSw();});}
+const crops={};   // ảnh cắt quanh chữ trên giấy tờ (từ máy chủ) để đối chiếu; không lưu vào phiếu
 function paintStatus(){paintSw();
+  document.querySelectorAll('#phieu .pcrop').forEach(im=>{const c=crops[im.id.slice(2)];if(c){im.src=c;im.hidden=false;}else im.hidden=true;});
   document.querySelectorAll('#phieu [data-k],#phieu [data-dk]').forEach(i=>{const s=st(i.dataset.k||i.dataset.dk);i.classList.remove('ok','check','missing');i.classList.add(s.status);});
   NOTE_KEYS.forEach(k=>{const el=$('#n-'+k);if(!el)return;const s=st(k);
     el.textContent=s.value&&s.note&&s.status!=='ok'?(s.status==='check'?'⚠ ':'')+s.note:'';});
@@ -790,8 +797,8 @@ if(window.isSecureContext)document.querySelector('.cap').classList.add('one');  
 let camStream=null,camKey=null;
 const IN_APP=/Zalo|FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|MicroMessenger/i.test(navigator.userAgent);   // trình duyệt nhúng: bắt video toàn màn hình
 const camOK=()=>!IN_APP&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.isSecureContext);
-function closeCam(){peekStop();if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}$('#cam').hidden=true;document.body.style.overflow='';}
-function camShow(k){camKey=k;peekQR=false;peekAcc={};$('#camTitle').textContent=CAM_TXT[k];$('#camHint').textContent=CAM_HINT[k];peekStop();}
+function closeCam(){countStop();peekStop();if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}$('#cam').hidden=true;document.body.style.overflow='';}
+function camShow(k){countStop();autoOff=false;lastSig='';okRun=0;camKey=k;peekQR=false;peekAcc={};$('#camTitle').textContent=CAM_TXT[k];$('#camHint').textContent=CAM_HINT[k];peekStop();}
 async function openCam(k){
   camShow(k);
   $('#cam').hidden=false;document.body.style.overflow='hidden';
@@ -800,8 +807,26 @@ async function openCam(k){
     const v=$('#camVideo');
     v.muted=true;v.defaultMuted=true;v.playsInline=true;v.controls=false;
     ['playsinline','webkit-playsinline','muted','disablepictureinpicture','disableremoteplayback'].forEach(n=>v.setAttribute(n,''));
-    v.srcObject=camStream;await v.play();peekLoop();
+    v.srcObject=camStream;await v.play();camTune();peekLoop();
   }catch(e){closeCam();toast('Không mở được camera. Hãy cho phép dùng camera cho trang này.');}
+}
+let torchOn=false,okRun=0,lastSig='',countT=0,autoOff=false;
+function countStop(){clearInterval(countT);countT=0;const e=$('#camCount');if(e)e.hidden=true;}
+function countStart(){
+  let n=2;const e=$('#camCount');e.hidden=false;
+  const draw=()=>{e.innerHTML=`Đã đọc ổn định — tự chụp sau <b>${n}</b>s <button type="button" id="camCancel">Huỷ</button>`;$('#camCancel').onclick=()=>{countStop();autoOff=true;};};
+  draw();countT=setInterval(()=>{n--;if(n<=0){countStop();okRun=0;snap();}else draw();},1000);
+}
+async function camTune(){      // lấy nét liên tục + nút đèn flash nếu máy hỗ trợ
+  const t=camStream&&camStream.getVideoTracks()[0];if(!t||!t.getCapabilities)return;
+  const c=t.getCapabilities(),adv=[];
+  if(c.focusMode&&c.focusMode.includes('continuous'))adv.push({focusMode:'continuous'});
+  if(adv.length)try{await t.applyConstraints({advanced:adv});}catch(e){}
+  torchOn=false;$('#camTorch').hidden=!c.torch;$('#camTorch').style.opacity=1;
+}
+async function toggleTorch(){
+  const t=camStream&&camStream.getVideoTracks()[0];if(!t)return;
+  try{await t.applyConstraints({advanced:[{torch:!torchOn}]});torchOn=!torchOn;$('#camTorch').style.opacity=torchOn?1:.5;}catch(e){}
 }
 function cropFrame(maxW){
   const v=$('#camVideo');if(!v.videoWidth)return null;
@@ -862,6 +887,12 @@ function peekShow(d){peekQR=camKey==='cccd_back'&&!!(d.qr&&d.fields&&d.fields.cc
   const chk=Object.values(f).some(v=>v.status!=='ok');
   const sharp=!SOK?`<div class="q bad">Chưa đủ nét (${d.sharp}/${SHARP_OK}) — giữ yên máy, lùi ra một chút, đủ sáng</div>`:(miss.length?`<div class="q no">Ảnh nét. Đã đọc ${exp.length-miss.length}/${exp.length} ô — còn thiếu: ${miss.join(', ')}. Cứ giữ máy, ô đã đọc được sẽ được nhớ lại.</div>`:`<div class="q ok">Ảnh nét, đã đọc đủ — ${chk?'xem lại các ô vàng rồi ':''}bấm chụp</div>`);
   $('#camLive').innerHTML=sharp+rows;
+  const KEYF={cavet:['bks','so_khung','so_may'],cccd_front:['cccd','ho_ten'],cccd_back:['cccd','ho_ten','dia_chi']}[camKey]||[];
+  const cur=d.fields||{},sig=KEYF.map(k=>cur[k]&&cur[k].value||'').join('|');   // giá trị đọc ở CHÍNH khung hình này
+  const ready=SOK&&!miss.length&&KEYF.every(k=>cur[k]&&cur[k].value)&&(camKey!=='cccd_back'||peekQR);
+  if(!ready||sig!==lastSig){okRun=ready?1:0;lastSig=ready?sig:'';if(countT)countStop();}   // đổi giá trị / mất nét → làm lại từ đầu
+  else okRun++;
+  if(okRun>=3&&!countT&&!autoOff)countStart();
   $('#camLive').hidden=false;
 }
 document.querySelectorAll('.cap label').forEach(l=>{
@@ -880,7 +911,7 @@ if(IN_APP){$('#inapp').hidden=false;$('#inappOpen').onclick=openExternal;
   if(ANDROID&&!sessionStorage.getItem('tried_ext')){sessionStorage.setItem('tried_ext','1');setTimeout(openExternal,300);}
   $('#inappX').onclick=()=>{$('#inapp').hidden=true;};
   $('#inappCopy').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Đã chép link. Dán vào Safari hoặc Chrome.');}catch(e){prompt('Chép link này:',location.href);}};}
-$('#camShot').onclick=snap;$('#camClose').onclick=closeCam;
+$('#camShot').onclick=snap;$('#camTorch').onclick=toggleTorch;$('#camClose').onclick=closeCam;
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#cam').hidden)closeCam();});
 function scanMsg(cls,html,spin){$('#scanStatus').innerHTML=html?`<div class="banner ${cls}">${spin?'<div class="spinner" aria-hidden="true"></div>':''}<div>${html}</div></div>`:'';}
 function collapseScan(){$('#scanBody').hidden=true;$('#scanDone').hidden=false;saveDraft();}
@@ -897,6 +928,7 @@ $('#btnScan').onclick=async()=>{
       let o=(k==='mau'&&o0.value)?{...o0,value:fixMau(o0.value)}:o0;
       if(!o.value&&liveAcc[k]&&liveAcc[k].value)o={value:liveAcc[k].value,status:'check',note:'Đọc từ camera lúc ngắm — kiểm tra lại với giấy tờ'};   // ảnh chụp cuối không đọc được nhưng lúc ngắm đã đọc được
       if(!o.value&&state[k]?.value)continue;
+      if(o.crop)crops[k]=o.crop;else delete crops[k];
       const vv=o.value?validate(k,o.value):null;
       state[k]={value:o.value||'',status:(vv&&vv.status!=='ok')?vv.status:(o.value?o.status:(FIELDS.find(f=>f.k===k)?.req?'missing':'ok')),note:(vv&&vv.status!=='ok')?vv.note:(o.note||(o.value?'':'Không đọc được — vui lòng nhập'))};
     }
@@ -963,17 +995,18 @@ function renderQueue(){
   el.innerHTML=Jobs.list.map(j=>{
     let act='';
     if(j.status==='cho_in')act=(isPrinter()?`<button class="btn primary sm" data-j="print" data-id="${j.id}">In ngay</button>`:'<span class="hint" style="margin:0">Đang chờ máy tính in</span>')+`<button class="btn link sm" data-j="del" data-id="${j.id}">Xóa</button>`;
-    else if(j.status==='dang_in')act=`<span class="hint" style="margin:0">Đang mở hộp thoại in…</span><button class="btn secondary sm" data-j="sent" data-id="${j.id}">Đã gửi xong</button>`;
+    else if(j.status==='dang_in')act=`<span class="hint" style="margin:0">Đang gửi tới máy in…</span><button class="btn secondary sm" data-j="sent" data-id="${j.id}">Đã gửi xong</button><button class="btn danger sm" data-j="cancel" data-id="${j.id}">Huỷ lệnh in</button>`;
     else if(j.status==='da_gui')act=`<button class="btn primary sm" data-j="done" data-id="${j.id}">Đã ra giấy ✓</button><button class="btn danger sm" data-j="fail" data-id="${j.id}">Giấy không ra</button>`;
     else if(j.status==='da_ra_giay')act=(isPrinter()?`<button class="btn secondary sm" data-j="print" data-id="${j.id}">In lại</button>`:'')+`<button class="btn link sm" data-j="del" data-id="${j.id}">Xóa</button>`;
     else if(j.status==='loi')act=(isPrinter()?`<button class="btn primary sm" data-j="print" data-id="${j.id}">In lại</button>`:'')+`<button class="btn link sm" data-j="del" data-id="${j.id}">Xóa</button>`;
     return `<div class="job"><div class="row1"><div class="who">${esc(j.bks||'Chưa có biển số')}<small>${esc(j.chu||'')}${j.xe?' · '+esc(j.xe):''}</small></div><span class="badge ${j.status}">${STATUS_TXT[j.status]}</span></div>
-      <p class="meta">${hhmm(j.created)}${j.lan>1?` · đã in ${j.lan} lần`:''}</p><div class="jact">${act}</div></div>`;}).join('');
+      <p class="meta">${hhmm(j.created)}${j.lan>1?` · đã in ${j.lan} lần`:''}</p>${j.status==='loi'&&j.note?`<p class="meta" style="color:#b3261e;font-weight:600">${esc(j.note)}</p>`:''}<div class="jact">${act}</div></div>`;}).join('');
 }
 $('#jobList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-j]');if(!b)return;const id=b.dataset.id,a=b.dataset.j;
   if(a==='print')printJob(id);
   else if(a==='sent')Jobs.setStatus(id,'da_gui');
+  else if(a==='cancel'){try{await fetch(`/api/jobs/${id}/cancel`,{method:'POST'});}catch(e){}toast('Đang huỷ lệnh in…');setTimeout(()=>Jobs.refresh(),1500);}
   else if(a==='done')Jobs.setStatus(id,'da_ra_giay');
   else if(a==='fail')Jobs.setStatus(id,'loi');
   else if(a==='del')Jobs.remove(id);
@@ -1041,6 +1074,11 @@ $('#btnPrint').onclick=async()=>{
 async function printJob(id){
   const snap=await Jobs.snapshot(id);
   if(!snap||!Object.keys(snap).length){toast('Lệnh in này đã hết hạn, hãy tạo lại.');return;}
+  // In từ máy chủ (không hộp thoại). Máy chủ tự cập nhật trạng thái: Đang in → Đã gửi máy in / Lỗi + lý do.
+  if(Jobs.mode==='server'&&!id.startsWith('L')){
+    try{await api(`/api/jobs/${id}/print`,{method:'POST'});await Jobs.refresh();openQueue();return;}
+    catch{toast('Không gọi được máy chủ in, chuyển sang in bằng trình duyệt.');}
+  }
   currentPrint={id,snap};
   await Jobs.setStatus(id,'dang_in');
   closeQueue();printSheet(snap);
