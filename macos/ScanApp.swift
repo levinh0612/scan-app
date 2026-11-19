@@ -32,6 +32,15 @@ func fetch(_ url: String, timeout: TimeInterval = 2) -> Data? {   // chạy ở 
     return out
 }
 
+func post(_ url: String, timeout: TimeInterval = 5) -> Bool {   // chạy ở luồng nền
+    guard let u = URL(string: url) else { return false }
+    var req = URLRequest(url: u); req.httpMethod = "POST"; req.timeoutInterval = timeout
+    let sem = DispatchSemaphore(value: 0); var ok = false
+    session.dataTask(with: req) { _, r, _ in ok = (r as? HTTPURLResponse)?.statusCode == 200; sem.signal() }.resume()
+    _ = sem.wait(timeout: .now() + timeout + 1)
+    return ok
+}
+
 func findBase() -> String? {
     for p in 8000...8010 { for s in ["http", "https"] {
         if fetch("\(s)://localhost:\(p)/api/health", timeout: 1.5) != nil { return "\(s)://localhost:\(p)" }
@@ -41,7 +50,7 @@ func findBase() -> String? {
 
 func startViaTerminal() {
     try? FileManager.default.removeItem(atPath: LOG)
-    let sh = "cd '\(ROOT)' && { if [ -x .venv/bin/python ]; then echo '##START'; else echo '##INSTALL'; fi; ./scripts/run.sh --auto; echo \"##END $?\"; } 2>&1 | tee \(LOG); exit"
+    let sh = "cd '\(ROOT)' && { rm -f .run/stopped; if [ -x .venv/bin/python ]; then echo '##START'; else echo '##INSTALL'; fi; ./scripts/run.sh --auto; echo \"##END $?\"; } 2>&1 | tee \(LOG); exit"
     let esc = sh.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
     let script = """
     tell application "Terminal"
@@ -51,6 +60,16 @@ func startViaTerminal() {
       end try
     end tell
     """
+    DispatchQueue.global().async {
+        let p = Process(); p.launchPath = "/usr/bin/osascript"; p.arguments = ["-e", script]
+        try? p.run(); p.waitUntilExit()
+    }
+}
+
+func stopViaTerminal() {   // dự phòng khi server là bản cũ chưa có lệnh dừng: nhờ Terminal chạy stop.sh
+    let sh = "cd '\(ROOT)' && mkdir -p .run && touch .run/stopped && ./scripts/stop.sh --fast; exit"
+    let esc = sh.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+    let script = "tell application \"Terminal\"\n set w to do script \"\(esc)\"\n try\n set miniaturized of (first window whose selected tab is w) to true\n end try\nend tell"
     DispatchQueue.global().async {
         let p = Process(); p.launchPath = "/usr/bin/osascript"; p.arguments = ["-e", script]
         try? p.run(); p.waitUntilExit()
@@ -93,6 +112,8 @@ final class App: NSObject, NSApplicationDelegate {
     let open = NSButton(title: "Mở app trên máy này", target: nil, action: nil)
     let copy = NSButton(title: "Chép link", target: nil, action: nil)
     let retry = NSButton(title: "Thử lại", target: nil, action: nil)
+    let stop = NSButton(title: "Dừng chạy app", target: nil, action: nil)
+    var stopped = false
     var base: String?, shownURL = "", started = false, busy = false, startedAt = Date()
 
     func applicationDidFinishLaunching(_ n: Notification) {
@@ -100,7 +121,7 @@ final class App: NSObject, NSApplicationDelegate {
         let sm = NSMenu(); sm.addItem(NSMenuItem(title: "Thoát ScanApp", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         ai.submenu = sm; NSApp.mainMenu = m
 
-        win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 700), styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+        win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 770), styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                        backing: .buffered, defer: false)
         win.title = "ScanApp"; win.center(); win.isReleasedWhenClosed = false
         win.titlebarAppearsTransparent = true; win.titleVisibility = .hidden
@@ -126,14 +147,14 @@ final class App: NSObject, NSApplicationDelegate {
         caption.font = .systemFont(ofSize: 17); caption.textColor = .secondaryLabelColor; caption.alignment = .center; caption.isHidden = true
         link.font = .monospacedSystemFont(ofSize: 13, weight: .medium); link.isSelectable = true; link.alignment = .center
         link.lineBreakMode = .byTruncatingMiddle; link.isHidden = true
-        for (b, primary) in [(open, true), (copy, false), (retry, true)] {
+        for (b, primary) in [(open, true), (copy, false), (retry, true), (stop, false)] {
             b.isBordered = false; b.wantsLayer = true; b.layer?.cornerRadius = 15; b.isHidden = true; b.target = self
             b.layer?.backgroundColor = primary ? NSColor.controlAccentColor.cgColor : NSColor.labelColor.withAlphaComponent(0.08).cgColor
             b.heightAnchor.constraint(equalToConstant: primary ? 56 : 50).isActive = true
             setBtn(b, b.title, primary: primary)
         }
-        open.keyEquivalent = "\r"; open.action = #selector(openApp); copy.action = #selector(copyLink); retry.action = #selector(retryStart)
-        let stack = NSStackView(views: [title, status, spinner, detail, card, caption, chip, open, copy, retry])
+        open.keyEquivalent = "\r"; open.action = #selector(openApp); copy.action = #selector(copyLink); retry.action = #selector(retryStart); stop.action = #selector(stopApp)
+        let stack = NSStackView(views: [title, status, spinner, detail, card, caption, chip, open, copy, retry, stop])
         stack.orientation = .vertical; stack.alignment = .centerX; stack.spacing = 16; stack.setCustomSpacing(6, after: title); stack.setCustomSpacing(26, after: caption)
         stack.translatesAutoresizingMaskIntoConstraints = false
         let cv = win.contentView!; cv.addSubview(stack)
@@ -143,7 +164,7 @@ final class App: NSObject, NSApplicationDelegate {
             spinner.widthAnchor.constraint(equalToConstant: 300), status.widthAnchor.constraint(equalToConstant: 400),
             detail.widthAnchor.constraint(equalToConstant: 400), caption.widthAnchor.constraint(equalToConstant: 400),
             chip.widthAnchor.constraint(equalToConstant: 380), open.widthAnchor.constraint(equalToConstant: 320),
-            copy.widthAnchor.constraint(equalToConstant: 320), retry.widthAnchor.constraint(equalToConstant: 320)])
+            copy.widthAnchor.constraint(equalToConstant: 320), retry.widthAnchor.constraint(equalToConstant: 320), stop.widthAnchor.constraint(equalToConstant: 320)])
         status.stringValue = "Đang kiểm tra…"
         win.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
         Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in self?.tick() }
@@ -156,7 +177,14 @@ final class App: NSObject, NSApplicationDelegate {
         NSPasteboard.general.clearContents(); NSPasteboard.general.setString(shownURL, forType: .string)
         setBtn(copy, "Đã chép ✓", primary: false); DispatchQueue.main.asyncAfter(deadline: .now() + 2) { setBtn(self.copy, "Chép link", primary: false) }
     }
-    @objc func retryStart() { started = false; startedAt = Date(); retry.isHidden = true; spinner.isHidden = false; tick() }
+    @objc func stopApp() {
+        let a = NSAlert(); a.messageText = "Dừng ScanApp?"; a.informativeText = "Điện thoại sẽ không gửi được hồ sơ cho đến khi bật lại. Lệnh in đang chờ trong danh sách sẽ mất."
+        a.addButton(withTitle: "Dừng"); a.addButton(withTitle: "Huỷ")
+        guard a.runModal() == .alertFirstButtonReturn, let b = base else { return }
+        stopped = true; stop.isHidden = true
+        DispatchQueue.global().async { if !post(b + "/api/shutdown") { stopViaTerminal() } }
+    }
+    @objc func retryStart() { stopped = false; started = false; startedAt = Date(); retry.isHidden = true; setBtn(retry, "Thử lại", primary: true); spinner.isHidden = false; tick() }
 
     func tick() {
         if busy { return }; busy = true
@@ -177,7 +205,8 @@ final class App: NSObject, NSApplicationDelegate {
     func update(_ b: String?, _ url: String, _ isHttps: Bool, _ img: NSImage?) {
         base = b
         if b != nil {
-            retry.isHidden = true; open.isHidden = false
+            if stopped { status.stringValue = "Đang dừng ScanApp…"; spinner.isHidden = false; [card, qr, caption, chip, link, open, copy, stop, retry].forEach { $0.isHidden = true }; return }
+            retry.isHidden = true; open.isHidden = false; stop.isHidden = false
             if isHttps {
                 spinner.isHidden = true; detail.isHidden = true
                 let ok = NSMutableAttributedString(string: "● ", attributes: [.foregroundColor: NSColor.systemGreen, .font: NSFont.systemFont(ofSize: 14)])
@@ -196,7 +225,11 @@ final class App: NSObject, NSApplicationDelegate {
             }
             return
         }
-        [card, qr, caption, chip, link, open, copy].forEach { $0.isHidden = true }; shownURL = ""
+        [card, qr, caption, chip, link, open, copy, stop].forEach { $0.isHidden = true }; shownURL = ""
+        if stopped {   // đã bấm Dừng: không tự bật lại
+            spinner.isHidden = true; detail.isHidden = true; retry.isHidden = false; setBtn(retry, "Bật lại ScanApp", primary: true)
+            status.stringValue = "ScanApp đã dừng"; return
+        }
         if !started { started = true; startedAt = Date(); startViaTerminal() }
         let li = logInfo()
         if let rc = li.endRC, rc != 0 || Date().timeIntervalSince(startedAt) > 20 {

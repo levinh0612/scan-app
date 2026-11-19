@@ -49,7 +49,7 @@ class JobStore:
             now = self._clock()
             job = {"id": f"J{self._seq}", "bks": str(bks)[:30], "xe": str(xe)[:60], "chu": str(chu)[:80],
                    "status": status, "created": now, "updated": now,
-                   "lan": 1 if status == "dang_in" else 0, "snapshot": clean_snapshot(snapshot)}
+                   "lan": 1 if status == "dang_in" else 0, "note": "", "snapshot": clean_snapshot(snapshot)}
             self._jobs[job["id"]] = job
             self._prune()
             return self._public(job)
@@ -64,14 +64,14 @@ class JobStore:
             job = self._jobs.get(jid)
             return dict(job["snapshot"]) if job else None
 
-    def update(self, jid: str, status: str) -> dict | None:
+    def update(self, jid: str, status: str, note: str = "") -> dict | None:
         if status not in STATUSES:
             raise ValueError("Trạng thái không hợp lệ")
         with self._lock:
             job = self._jobs.get(jid)
             if not job:
                 return None
-            job["status"], job["updated"] = status, self._clock()
+            job["status"], job["updated"], job["note"] = status, self._clock(), str(note)[:300]
             if status == "dang_in":
                 job["lan"] += 1
             return self._public(job)

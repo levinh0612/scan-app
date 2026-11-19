@@ -37,7 +37,7 @@ function Get-LastLine($path) {
 
 # ---------- giao diện ----------
 $f = New-Object Windows.Forms.Form
-$f.Text = 'ScanApp'; $f.ClientSize = New-Object Drawing.Size(480, 700); $f.StartPosition = 'CenterScreen'
+$f.Text = 'ScanApp'; $f.ClientSize = New-Object Drawing.Size(480, 710); $f.StartPosition = 'CenterScreen'
 $f.FormBorderStyle = 'FixedSingle'; $f.MaximizeBox = $false; $f.Font = New-Object Drawing.Font('Segoe UI', 12)
 try { $f.Icon = New-Object Drawing.Icon((Join-Path $Root 'assets\scanapp.ico')) } catch { }
 function Add-Label($y, $h, $size, $bold) {
@@ -60,9 +60,10 @@ $tLink = New-Object Windows.Forms.TextBox; $tLink.SetBounds(40, 486, 400, 30); $
 $bOpen = Add-Button 530 'Mở app trên máy này' $true
 $bCopy = Add-Button 592 'Chép link' $false
 $bRetry = Add-Button 530 'Thử lại' $true
+$bStop = Add-Button 640 'Dừng chạy app' $false
 
 # ---------- trạng thái ----------
-$st = @{ started = $false; mode = ''; proc = $null; t0 = Get-Date; base = $null; shown = ''; busy = $false }
+$st = @{ stopped = $false; started = $false; mode = ''; proc = $null; t0 = Get-Date; base = $null; shown = ''; busy = $false }
 function Start-Work {
     $st.started = $true; $st.t0 = Get-Date; $st.proc = $null
     try {
@@ -70,7 +71,7 @@ function Start-Work {
             $st.mode = 'install'; Remove-Item $InstallLog -Force -ErrorAction SilentlyContinue
             $st.proc = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -PassThru -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'install.ps1')`""
         } else {
-            $st.mode = 'start'
+            $st.mode = 'start'; Remove-Item (Join-Path $Root '.run\stopped') -Force -ErrorAction SilentlyContinue
             $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $Root 'scripts\run.ps1')`"", '-Auto'); $m = Get-Mode; if ($m) { $a += $m }
             $st.proc = Start-Process powershell.exe -WindowStyle Hidden -PassThru -ArgumentList $a `
                 -RedirectStandardOutput (Join-Path $Root 'logs\launcher.log') -RedirectStandardError (Join-Path $Root 'logs\launcher.err.log')
@@ -78,7 +79,8 @@ function Start-Work {
     } catch { $st.mode = 'denied' }
 }
 function Show-Ready($base) {
-    $bRetry.Visible = $false; $bOpen.Visible = $true
+    if ($st.stopped) { $lStatus.Text = 'Đang dừng ScanApp...'; foreach ($c in $pic, $lCap, $tLink, $bOpen, $bCopy, $bStop, $bRetry) { $c.Visible = $false }; return }
+    $bRetry.Visible = $false; $bOpen.Visible = $true; $bStop.Visible = $true
     $items = @(); try { $items = @((Invoke-RestMethod -Uri "$base/api/links" -TimeoutSec 3).items) } catch { }
     $it = $items | Where-Object { $_.url -like 'https*' } | Select-Object -First 1   # chỉ QR https (http thì camera điện thoại không chạy)
     if (-not $it) {   # chưa có link https -> chưa hiện QR để chủ tiệm không quét nhầm link http
@@ -104,7 +106,8 @@ function Tick {
     try {
         $b = Get-Base; $st.base = $b
         if ($b) { Show-Ready $b; return }
-        foreach ($c in $pic, $lCap, $tLink, $bOpen, $bCopy) { $c.Visible = $false }; $st.shown = ''
+        foreach ($c in $pic, $lCap, $tLink, $bOpen, $bCopy, $bStop) { $c.Visible = $false }; $st.shown = ''
+        if ($st.stopped) { $bar.Visible = $false; $lDetail.Visible = $false; $bRetry.Text = 'Bật lại ScanApp'; $bRetry.Visible = $true; $lStatus.Text = 'ScanApp đã dừng'; return }
         if (-not $st.started) { Start-Work }
         $exited = $false; try { if ($st.proc -and $st.proc.HasExited) { $exited = $true } } catch { }
         $secs = ((Get-Date) - $st.t0).TotalSeconds
@@ -121,7 +124,17 @@ function Tick {
 }
 $bOpen.Add_Click({ if ($st.base) { Start-Process "$($st.base)/" } })
 $bCopy.Add_Click({ [Windows.Forms.Clipboard]::SetText($tLink.Text); $bCopy.Text = 'Đã chép ✓'; $script:cpT = Get-Date })
-$bRetry.Add_Click({ $bRetry.Visible = $false; $st.started = $false; $lStatus.Text = 'Đang thử lại...'; Tick })
+$bStop.Add_Click({
+    $r = [Windows.Forms.MessageBox]::Show("Điện thoại sẽ không gửi được hồ sơ cho đến khi bật lại.`nLệnh in đang chờ trong danh sách sẽ mất.", 'Dừng ScanApp?', 'YesNo', 'Question')
+    if ($r -ne 'Yes' -or -not $st.base) { return }
+    $st.stopped = $true; $bStop.Visible = $false
+    try { Invoke-RestMethod -Method Post -Uri "$($st.base)/api/shutdown" -TimeoutSec 5 | Out-Null }
+    catch {   # server bản cũ chưa có lệnh dừng: tự chạy stop.ps1
+        New-Item -ItemType Directory -Force (Join-Path $Root '.run') | Out-Null; Set-Content (Join-Path $Root '.run\stopped') '1'
+        Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $Root 'scripts\stop.ps1')`""
+    }
+})
+$bRetry.Add_Click({ $st.stopped = $false; $bRetry.Text = 'Thử lại'; $bRetry.Visible = $false; $st.started = $false; $lStatus.Text = 'Đang thử lại...'; Tick })
 $timer = New-Object Windows.Forms.Timer; $timer.Interval = 2500
 $timer.Add_Tick({ if ($bCopy.Text -ne 'Chép link' -and ((Get-Date) - $script:cpT).TotalSeconds -gt 2) { $bCopy.Text = 'Chép link' }; Tick })
 $f.Add_Shown({ $f.Activate(); $lStatus.Text = 'Đang kiểm tra...'; $timer.Start(); Tick })

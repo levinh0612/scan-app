@@ -25,6 +25,11 @@ if ($env:PORT) { $Port = [int]$env:PORT }
 $pf = Join-Path $Root '.run\port'; $sp = Join-Path $Root '.run\server.pid'
 if ((Test-Path $pf) -and (Test-Path $sp) -and (Get-Process -Id ([int](Get-Content $sp)) -ErrorAction SilentlyContinue)) { $Port = [int](Get-Content $pf) }
 
+# Đã bấm "Dừng chạy app": tác vụ tự động (-Auto) không được bật lại; chạy tay hoặc mở cửa sổ ScanApp thì xoá cờ
+$StopFlag = Join-Path $Root '.run\stopped'
+if ($Auto -and (Test-Path $StopFlag)) { Write-Host 'ScanApp đang được dừng thủ công - bỏ qua.'; exit 0 }
+if (-not $Auto) { Remove-Item $StopFlag -Force -ErrorAction SilentlyContinue }
+
 # ---- Menu chọn (chỉ khi chạy tay, không tham số, có cửa sổ tương tác) ----
 if ($PSBoundParameters.Count -eq 0 -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
     Write-Host ''

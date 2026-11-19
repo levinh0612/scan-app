@@ -46,6 +46,10 @@ for a in "$@"; do
   esac
 done
 
+# Đã bấm "Dừng chạy app": tác vụ tự động (--auto) không được bật lại; chạy tay hoặc mở cửa sổ ScanApp thì xoá cờ
+if [ "$AUTO" -eq 1 ] && [ -f .run/stopped ]; then echo "ScanApp đang được dừng thủ công — bỏ qua."; exit 0; fi
+[ "$AUTO" -eq 0 ] && rm -f .run/stopped
+
 # ---------- Menu chọn (chỉ khi chạy tay, không tham số, có terminal) ----------
 if [ "$#" -eq 0 ] && [ -t 0 ] && [ -t 1 ]; then
   echo

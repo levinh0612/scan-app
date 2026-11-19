@@ -10,6 +10,7 @@ esac
 PORT="${PORT:-8000}"
 [ -f ".run/port" ] && PORT="$(cat .run/port)"   # cổng thật mà run.sh đã chọn
 PID_FILE=".run/server.pid"
+WAIT=15; [ "${1:-}" = "--fast" ] && WAIT=3   # --fast: người dùng bấm Dừng, không chờ lâu
 
 wait_dead() {   # $1=pid, $2=số giây
   for _ in $(seq 1 "$2"); do kill -0 "$1" 2>/dev/null || return 0; sleep 1; done
@@ -21,7 +22,7 @@ stop_pid() {
   kill -0 "$pid" 2>/dev/null || return 0
   echo "Dừng server (PID $pid)..."
   kill -TERM "$pid" 2>/dev/null
-  if ! wait_dead "$pid" 15; then
+  if ! wait_dead "$pid" "$WAIT"; then
     echo "Không tắt được nhẹ nhàng, ép dừng."
     kill -KILL "$pid" 2>/dev/null; wait_dead "$pid" 3
   fi

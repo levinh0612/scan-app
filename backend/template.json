@@ -1,0 +1,157 @@
+{
+ "_note": "Toạ độ TẠM ước lượng từ ảnh chụp nghiêng. Khi có ảnh/bản quét chuẩn thì đo lại. x,y,w tính bằng mm từ góc trên-trái tờ giấy; y là đường chữ (baseline). prefix = phần năm đã in sẵn trên giấy (chỉ in phần còn lại).",
+ "page": {
+  "w": 148,
+  "h": 210
+ },
+ "calibrated": false,
+ "fields": {
+  "ho_ten": {
+   "x": 36.5,
+   "y": 21.0,
+   "w": 97.1,
+   "size": 10
+  },
+  "dia_chi": {
+   "x": 20.8,
+   "y": 27.2,
+   "w": 113.9,
+   "size": 10
+  },
+  "cccd": {
+   "x": 61.5,
+   "y": 32.8,
+   "w": 73.2,
+   "size": 10
+  },
+  "ngay_cap_d": {
+   "x": 21.8,
+   "y": 38.9,
+   "w": 7.8,
+   "size": 10,
+   "align": "center"
+  },
+  "ngay_cap_m": {
+   "x": 37.7,
+   "y": 38.9,
+   "w": 7.8,
+   "size": 10,
+   "align": "center"
+  },
+  "ngay_cap_y": {
+   "x": 53.4,
+   "y": 38.9,
+   "w": 7.0,
+   "size": 10,
+   "align": "center"
+  },
+  "sdt": {
+   "x": 70.0,
+   "y": 38.9,
+   "w": 64.7,
+   "size": 10
+  },
+  "ke1": {
+   "x": 7.4,
+   "y": 52.6,
+   "w": 128.3,
+   "size": 10
+  },
+  "ke2": {
+   "x": 7.4,
+   "y": 58.8,
+   "w": 128.3,
+   "size": 10
+  },
+  "ke3": {
+   "x": 7.4,
+   "y": 65.0,
+   "w": 128.3,
+   "size": 10
+  },
+  "le_phi": {
+   "x": 32.9,
+   "y": 70.8,
+   "w": 101.8,
+   "size": 10
+  },
+  "chu": {
+   "x": 37.7,
+   "y": 84.6,
+   "w": 99.7,
+   "size": 10
+  },
+  "so": {
+   "x": 35.0,
+   "y": 91.0,
+   "w": 101.8,
+   "size": 10
+  },
+  "tu_d": {
+   "x": 38.2,
+   "y": 96.9,
+   "w": 13.8,
+   "size": 10,
+   "align": "center"
+  },
+  "tu_m": {
+   "x": 60.4,
+   "y": 96.9,
+   "w": 11.7,
+   "size": 10,
+   "align": "center"
+  },
+  "tu_y": {
+   "x": 85.2,
+   "y": 96.9,
+   "w": 11.7,
+   "size": 10,
+   "align": "center",
+   "prefix": "202"
+  },
+  "den_d": {
+   "x": 39.7,
+   "y": 103.6,
+   "w": 13.4,
+   "size": 10,
+   "align": "center"
+  },
+  "den_m": {
+   "x": 60.4,
+   "y": 103.6,
+   "w": 11.7,
+   "size": 10,
+   "align": "center"
+  },
+  "den_y": {
+   "x": 85.9,
+   "y": 103.6,
+   "w": 11.7,
+   "size": 10,
+   "align": "center",
+   "prefix": "202"
+  },
+  "lap_d": {
+   "x": 99.7,
+   "y": 177.5,
+   "w": 7.0,
+   "size": 10,
+   "align": "center"
+  },
+  "lap_m": {
+   "x": 114.9,
+   "y": 177.5,
+   "w": 7.6,
+   "size": 10,
+   "align": "center"
+  },
+  "lap_y": {
+   "x": 136.8,
+   "y": 177.5,
+   "w": 6.4,
+   "size": 10,
+   "align": "center",
+   "prefix": "202"
+  }
+ }
+}
