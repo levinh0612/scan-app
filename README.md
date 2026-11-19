@@ -43,20 +43,20 @@ Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), t
 | Quét giấy tờ | Trên điện thoại: tab **Hồ sơ mới** → chụp CCCD, cà vẹt |
 | Xem lỗi / log | `logs/server.log`, `logs/launcher.log`, `logs/install.log` |
 
-Trên máy Windows đã chạy `Cai-Dat.cmd`, server tự chạy khi bật máy nên chỉ cần bấm **ScanApp**.
+Trên máy Windows đã chạy `RUN_THIS_FILE_WIN.cmd`, server tự chạy khi bật máy nên chỉ cần bấm **ScanApp**.
 
 ---
 
 ## 3. Cài đặt (làm MỘT lần)
 
-> **Chỉ cần nhớ 1 file:** Mac → `macos/Cai-Dat.command`, Windows → `windows/Cai-Dat.cmd`. Các file còn lại là "ruột" để file đó tự gọi, không cần mở.
+> **Chỉ cần nhớ 1 file:** Mac → `macos/RUN_THIS_FILE_MACOS.command`, Windows → `windows/RUN_THIS_FILE_WIN.cmd`. Các file còn lại là "ruột" để file đó tự gọi, không cần mở.
 
 Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
 | Máy | Lấy code | Bấm đúp |
 |---|---|---|
-| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`macos/Cai-Dat.command`** |
-| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`windows\Cai-Dat.cmd`** (chọn Yes khi Windows hỏi quyền) |
+| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`macos/RUN_THIS_FILE_MACOS.command`** |
+| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`windows\RUN_THIS_FILE_WIN.cmd`** (chọn Yes khi Windows hỏi quyền) |
 
 Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa sổ ScanApp:
 
@@ -64,11 +64,11 @@ Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa
 2. **Chưa chạy** → tự bật server ngầm.
 3. **Sẵn sàng** → hiện **mã QR + link https** cho điện thoại và nút **Mở app trên máy này**. Đóng cửa sổ thì server vẫn chạy ngầm.
 
-**Mac** — `Cai-Dat.command` chỉ tạo icon (biên dịch cửa sổ Swift, cần Xcode Command Line Tools — đã có sẵn nếu máy có git) rồi mở nó.
+**Mac** — `RUN_THIS_FILE_MACOS.command` chỉ tạo icon (biên dịch cửa sổ Swift, cần Xcode Command Line Tools — đã có sẵn nếu máy có git) rồi mở nó.
 macOS không cho app mở từ Finder đọc `~/Documents` nên việc cài/chạy giao cho một cửa sổ Terminal thu nhỏ (lần đầu có thể hỏi quyền điều khiển Terminal → OK).
-Dời thư mục `scan-app` thì bấm lại `macos/Cai-Dat.command`.
+Dời thư mục `scan-app` thì bấm lại `macos/RUN_THIS_FILE_MACOS.command`.
 
-**Windows** — `Cai-Dat.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
+**Windows** — `RUN_THIS_FILE_WIN.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
 và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restart giữ nguyên link; bản mới lỗi thì tự quay về bản cũ;
 đang có lệnh in chờ thì hoãn) cùng icon ScanApp. Nếu bấm icon khi chưa cài, cửa sổ tự chạy cài đặt (Windows hỏi quyền → Yes).
 Tuỳ chọn: `-Port 9000`, `-Https` (https tự ký trong wifi thay vì link internet), `-Token` (repo private).
@@ -152,11 +152,11 @@ scan-app/
 │   ├── run.ps1 / stop.ps1  # Windows
 │   └── tunnel.ps1        # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
 ├── macos/                # icon + cửa sổ ScanApp trên Mac
-│   ├── Cai-Dat.command   # bấm đúp: tạo icon ScanApp ra Desktop rồi mở
+│   ├── RUN_THIS_FILE_MACOS.command   # bấm đúp: tạo icon ScanApp ra Desktop rồi mở
 │   ├── make-mac-app.sh   # biên dịch ScanApp.swift thành ScanApp.app
 │   └── ScanApp.swift     # cửa sổ native: tự cài / tự bật server / hiện QR + link
 ├── windows/              # icon + cửa sổ ScanApp trên Windows
-│   ├── Cai-Dat.cmd       # bấm đúp: cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
+│   ├── RUN_THIS_FILE_WIN.cmd       # bấm đúp: cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
 │   ├── install.ps1 / uninstall.cmd / uninstall.ps1
 │   ├── make-shortcut.ps1 # tạo lại icon ScanApp
 │   └── open-app.ps1      # cửa sổ native (WinForms): tự cài / tự bật / hiện QR + link

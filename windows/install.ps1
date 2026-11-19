@@ -1,8 +1,8 @@
 ﻿# install.ps1 - cài chạy tự động trên Windows 10/11 (chạy MỘT lần, bằng quyền Administrator)
 #   Việc làm:  kiểm tra Windows, cài môi trường + chạy thử, mở firewall (mạng riêng),
 #              tạo 2 tác vụ: ScanApp (bật máy là chạy) và ScanApp-Update (30 phút kiểm tra bản mới từ GitHub)
-# Dùng:  bấm đúp Cai-Dat.cmd   (chọn Yes khi Windows hỏi quyền)
-#        Cai-Dat.cmd -Port 8000 -Https -Token   (-Https: thêm https tự ký thay cho link internet; -Token: mã GitHub chỉ-đọc cho repo private)
+# Dùng:  bấm đúp RUN_THIS_FILE_WIN.cmd   (chọn Yes khi Windows hỏi quyền)
+#        RUN_THIS_FILE_WIN.cmd -Port 8000 -Https -Token   (-Https: thêm https tự ký thay cho link internet; -Token: mã GitHub chỉ-đọc cho repo private)
 # Mặc định: điện thoại vào bằng link https qua internet (cloudflared, tự cài), không cần cùng wifi.
 [CmdletBinding()]
 param([int]$Port = 8000, [switch]$Https, [switch]$Token)
