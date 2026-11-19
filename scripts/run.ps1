@@ -259,7 +259,7 @@ $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
 Log ('Server đang chạy (PID ' + (Get-Content $PidFile) + ')')
 Write-Host "   Máy này     : ${Scheme}://localhost:$Port"
 $QrArgs = @()
-if ($ip) { Write-Host "   Điện thoại  : ${Scheme}://${ip}:$Port   (cùng wifi)"; if (-not $Tunnel) { $QrArgs += "Cùng wifi=${Scheme}://${ip}:$Port" }; if ($Https) { Write-Host "   (lần đầu điện thoại báo `"không an toàn`": bấm Nâng cao → Tiếp tục)" } }
+if ($ip) { Write-Host "   Điện thoại  : ${Scheme}://${ip}:$Port   (cùng wifi)"; if (-not $Tunnel -and $Https) { $QrArgs += "Cùng wifi=${Scheme}://${ip}:$Port" }; if ($Https) { Write-Host "   (lần đầu điện thoại báo `"không an toàn`": bấm Nâng cao → Tiếp tục)" } }
 if ($Tunnel) {
     if (-not (Have 'cloudflared')) {
         Warn 'Chưa có cloudflared nên không tạo được link https. Cài: winget install Cloudflare.cloudflared'

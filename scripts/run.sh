@@ -234,7 +234,7 @@ echo "   Máy tính   ${SCHEME}://localhost:${PORT}"
 if [ -n "${IP:-}" ]; then
   echo "   Cùng wifi  ${SCHEME}://${IP}:${PORT}"
   [ "$HTTPS" = "1" ] && echo "   (lần đầu điện thoại báo \"không an toàn\": bấm Nâng cao → Tiếp tục)"
-  WIFI_QR=""; [ "$TUNNEL" != "1" ] && WIFI_QR="$(.venv/bin/python backend/qr_print.py "Cùng wifi=${SCHEME}://${IP}:${PORT}" 2>/dev/null || true)"   # có tunnel thì chỉ hiện QR link https
+  WIFI_QR=""; [ "$TUNNEL" != "1" ] && [ "$SCHEME" = "https" ] && WIFI_QR="$(.venv/bin/python backend/qr_print.py "Cùng wifi=${SCHEME}://${IP}:${PORT}" 2>/dev/null || true)"   # có tunnel thì chỉ hiện QR link https
   if [ -n "$WIFI_QR" ]; then echo; echo "$WIFI_QR"; echo; QR_LINES=$(( $(echo "$WIFI_QR" | wc -l) + 2 )); fi   # in ngay, không chờ tunnel
 fi
 if [ "$TUNNEL" = "1" ]; then

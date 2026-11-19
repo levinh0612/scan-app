@@ -165,7 +165,7 @@ final class App: NSObject, NSApplicationDelegate {
             var items: [[String: Any]] = []
             if let b = b, let d = fetch(b + "/api/links", timeout: 3),
                let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let it = j["items"] as? [[String: Any]] { items = it }
-            let pick = items.first { ($0["url"] as? String ?? "").hasPrefix("https") } ?? items.first
+            let pick = items.first { ($0["url"] as? String ?? "").hasPrefix("https") }   // chỉ QR https (http thì camera điện thoại không chạy)
             var img: NSImage?; let url = pick?["url"] as? String ?? ""
             if let b = b, !url.isEmpty, url != self.shownURL,
                let q = url.addingPercentEncoding(withAllowedCharacters: .alphanumerics),
@@ -177,16 +177,23 @@ final class App: NSObject, NSApplicationDelegate {
     func update(_ b: String?, _ url: String, _ isHttps: Bool, _ img: NSImage?) {
         base = b
         if b != nil {
-            spinner.isHidden = true; detail.isHidden = true; retry.isHidden = true
-            let ok = NSMutableAttributedString(string: "● ", attributes: [.foregroundColor: NSColor.systemGreen, .font: NSFont.systemFont(ofSize: 14)])
-            ok.append(NSAttributedString(string: "ScanApp đã sẵn sàng", attributes: [.foregroundColor: NSColor.labelColor, .font: NSFont.systemFont(ofSize: 20, weight: .semibold)]))
-            let ps = NSMutableParagraphStyle(); ps.alignment = .center; ok.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: ok.length))
-            status.attributedStringValue = ok
-            [card, qr, caption, chip, link, open, copy].forEach { $0.isHidden = false }
-            if let i = img { qr.image = i }
-            if !url.isEmpty { shownURL = url; link.stringValue = url }
-            caption.stringValue = isHttps ? "Dùng camera điện thoại quét mã này để mở app"
-                                          : "Đang tạo link https cho camera điện thoại… (vài giây)\nTạm thời quét mã này (cùng wifi)"
+            retry.isHidden = true; open.isHidden = false
+            if isHttps {
+                spinner.isHidden = true; detail.isHidden = true
+                let ok = NSMutableAttributedString(string: "● ", attributes: [.foregroundColor: NSColor.systemGreen, .font: NSFont.systemFont(ofSize: 14)])
+                ok.append(NSAttributedString(string: "ScanApp đã sẵn sàng", attributes: [.foregroundColor: NSColor.labelColor, .font: NSFont.systemFont(ofSize: 20, weight: .semibold)]))
+                let ps = NSMutableParagraphStyle(); ps.alignment = .center; ok.addAttribute(.paragraphStyle, value: ps, range: NSRange(location: 0, length: ok.length))
+                status.attributedStringValue = ok
+                [card, qr, caption, chip, link, copy].forEach { $0.isHidden = false }
+                if let i = img { qr.image = i }
+                if !url.isEmpty { shownURL = url; link.stringValue = url }
+                caption.stringValue = "Dùng camera điện thoại quét mã này để mở app"
+            } else {   // chưa có link https → chưa hiện QR để chủ tiệm không quét nhầm link http
+                [card, qr, caption, chip, link, copy].forEach { $0.isHidden = true }; shownURL = ""
+                spinner.isHidden = false; detail.isHidden = false
+                status.stringValue = "Đang tạo link https cho điện thoại…"
+                detail.stringValue = "Vài giây nữa mã QR sẽ hiện ra. Trong lúc chờ vẫn dùng app trên máy này được."
+            }
             return
         }
         [card, qr, caption, chip, link, open, copy].forEach { $0.isHidden = true }; shownURL = ""

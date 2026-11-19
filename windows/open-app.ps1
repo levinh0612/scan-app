@@ -78,19 +78,25 @@ function Start-Work {
     } catch { $st.mode = 'denied' }
 }
 function Show-Ready($base) {
-    $bar.Visible = $false; $lDetail.Visible = $false; $bRetry.Visible = $false
-    $lStatus.Text = 'ScanApp đã sẵn sàng'
+    $bRetry.Visible = $false; $bOpen.Visible = $true
     $items = @(); try { $items = @((Invoke-RestMethod -Uri "$base/api/links" -TimeoutSec 3).items) } catch { }
-    $it = $items | Where-Object { $_.url -like 'https*' } | Select-Object -First 1; $https = [bool]$it
-    if (-not $it) { $it = $items | Select-Object -First 1 }
-    if ($it -and $it.url -ne $st.shown) {
+    $it = $items | Where-Object { $_.url -like 'https*' } | Select-Object -First 1   # chỉ QR https (http thì camera điện thoại không chạy)
+    if (-not $it) {   # chưa có link https -> chưa hiện QR để chủ tiệm không quét nhầm link http
+        foreach ($c in $pic, $lCap, $tLink, $bCopy) { $c.Visible = $false }; $st.shown = ''
+        $bar.Visible = $true; $lDetail.Visible = $true
+        $lStatus.Text = "Đang tạo link https cho điện thoại..."; $lDetail.Text = 'Vài giây nữa mã QR sẽ hiện ra. Trong lúc chờ vẫn dùng app trên máy này được.'
+        return
+    }
+    $bar.Visible = $false; $lDetail.Visible = $false
+    $lStatus.Text = 'ScanApp đã sẵn sàng'
+    if ($it.url -ne $st.shown) {
         try {
             $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 4 -Uri ("$base/api/qr.png?u=" + [uri]::EscapeDataString($it.url))
             $ms = New-Object IO.MemoryStream(, $r.Content); $pic.Image = [Drawing.Image]::FromStream($ms)
         } catch { }
         $st.shown = $it.url; $tLink.Text = $it.url
     }
-    $lCap.Text = if ($https) { 'Dùng camera điện thoại quét mã này để mở app' } else { "Đang tạo link https cho camera điện thoại (vài giây)...`nTạm thời quét mã này (cùng wifi)" }
+    $lCap.Text = 'Dùng camera điện thoại quét mã này để mở app'
     foreach ($c in $pic, $lCap, $tLink, $bOpen, $bCopy) { $c.Visible = $true }
 }
 function Tick {
