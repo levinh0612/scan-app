@@ -242,7 +242,8 @@ if [ "$TUNNEL" = "1" ]; then
     warn "Chưa có cloudflared nên không tạo được link https. Cài: brew install cloudflared"
   else
     : > "$LOG_DIR/tunnel.log"
-    nohup cloudflared tunnel $([ "$HTTPS" = "1" ] && echo --no-tls-verify) --url "${SCHEME}://localhost:${PORT}" >> "$LOG_DIR/tunnel.log" 2>&1 &
+    # Vòng giám sát: Cloudflare hay từ chối tạm thời (429 khi tạo link liên tục) hoặc tunnel rớt → tự thử lại sau 20 giây, không cần chạy lại run.sh
+    nohup bash -c 'while true; do cloudflared tunnel "$@" 2>&1; sleep 20; : > "$0"; done' "$LOG_DIR/tunnel.log" $([ "$HTTPS" = "1" ] && echo --no-tls-verify) --url "${SCHEME}://localhost:${PORT}" >> "$LOG_DIR/tunnel.log" 2>&1 &
     echo $! > "$RUN_DIR/tunnel.pid"
     URL=""
     printf "   Link https  đang tạo (QR wifi ở trên dùng được ngay)"

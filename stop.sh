@@ -29,7 +29,7 @@ stop_pid() {
 
 STOPPED=0
 if [ -f ".run/tunnel.pid" ]; then          # tắt tunnel https (nếu run.sh --tunnel đã mở)
-  kill "$(cat .run/tunnel.pid)" 2>/dev/null; rm -f .run/tunnel.pid
+  TP="$(cat .run/tunnel.pid)"; pkill -P "$TP" 2>/dev/null; kill "$TP" 2>/dev/null; rm -f .run/tunnel.pid   # vòng giám sát + cloudflared con
 fi
 if [ -f "$PID_FILE" ]; then
   PID="$(cat "$PID_FILE")"

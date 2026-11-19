@@ -987,6 +987,7 @@ $('#btnPrn2').onclick=()=>$('#btnPrn').click();
   fetch('/api/links').then(r=>r.json()).then(d=>{
     const it=d.items.find(i=>i.url.startsWith('https'))||d.items[0];if(!it)throw 0;
     $('#hdrQrImg').src=it.qr;$('#hdrQrBig').src=it.qr;$('#hdrQrUrl').textContent=it.url.replace(/^https?:\/\//,'');$('#hdrQr').hidden=false;
+    if(!it.url.startsWith('https'))setTimeout(()=>hdrQr(n+1),5000);   // chưa có link https (tunnel đang tạo/thử lại) → hỏi lại đến khi có
   }).catch(()=>{if(n<5)setTimeout(()=>hdrQr(n+1),4000);});
 })(0);
 $('#hdrQr').onclick=()=>$('#tabLink').click();
@@ -994,6 +995,7 @@ $('#tabLink').onclick=async()=>{
   $('#linkDlg').hidden=false;$('#linkBody').innerHTML='<p class="lnote">Đang lấy địa chỉ…</p>';
   try{const d=await api('/api/links');
     $('#linkBody').innerHTML=d.items.length?d.items.map(i=>`<figure class="lk"><img alt="Mã QR ${esc(i.label)}" src="${i.qr}"><figcaption><b>${esc(i.label)}</b><span>${esc(i.url)}</span><small>${esc(i.note)}</small></figcaption></figure>`).join(''):'<p class="lnote">Chưa có địa chỉ để chia sẻ. Hãy chạy máy chủ bằng run.sh / run.cmd.</p>';
+    if(!d.items.some(i=>i.url.startsWith('https'))){$('#linkBody').insertAdjacentHTML('beforeend','<p class="lnote"><b>Link https (dùng được camera) chưa có:</b> đang tạo hoặc Cloudflare đang bận — tự thử lại, chờ một lát…</p>');setTimeout(()=>{if(!$('#linkDlg').hidden)$('#tabLink').onclick();},6000);}
   }catch(e){$('#linkBody').innerHTML='<p class="lnote">Không lấy được địa chỉ.</p>';}
 };
 $('#linkX').onclick=()=>{$('#linkDlg').hidden=true;};$('#linkDlg').addEventListener('click',e=>{if(e.target.id==='linkDlg')$('#linkDlg').hidden=true;});
