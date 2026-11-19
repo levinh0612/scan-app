@@ -49,6 +49,8 @@ Trên máy Windows đã chạy `Cai-Dat.cmd`, server tự chạy khi bật máy 
 
 ## 3. Cài đặt (làm MỘT lần)
 
+> **Chỉ cần nhớ 1 file:** Mac → `macos/Cai-Dat.command`, Windows → `windows/Cai-Dat.cmd`. Các file còn lại là "ruột" để file đó tự gọi, không cần mở.
+
 Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
 | Máy | Lấy code | Bấm đúp |
@@ -70,7 +72,7 @@ Dời thư mục `scan-app` thì bấm lại `macos/Cai-Dat.command`.
 và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restart giữ nguyên link; bản mới lỗi thì tự quay về bản cũ;
 đang có lệnh in chờ thì hoãn) cùng icon ScanApp. Nếu bấm icon khi chưa cài, cửa sổ tự chạy cài đặt (Windows hỏi quyền → Yes).
 Tuỳ chọn: `-Port 9000`, `-Https` (https tự ký trong wifi thay vì link internet), `-Token` (repo private).
-Gỡ: `windows\uninstall.cmd`. Chỉ tạo lại icon: `windows\make-shortcut.cmd`.
+Gỡ: `windows\uninstall.cmd`. Chỉ tạo lại icon: `powershell -File windows\make-shortcut.ps1`.
 
 **Máy in:** cài driver, đặt khổ giấy mặc định **A5 dọc**; trong hộp thoại in của Chrome/Edge: lề **None**, tỉ lệ **100%**,
 tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong router và tắt Sleep.
@@ -81,13 +83,13 @@ tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong 
 
 | Việc | macOS / Linux | Windows |
 |---|---|---|
-| Cài + cập nhật + chạy (B1→B4) | `./scripts/run.sh` | `windows\run.cmd` |
-| Bỏ bước pull code | `./scripts/run.sh --no-pull` | `windows\run.cmd -NoPull` |
-| Chế độ tự động (chỉ restart khi có code mới) | `./scripts/run.sh --auto` | `windows\run.cmd -Auto` |
+| Cài + cập nhật + chạy (B1→B4) | `./scripts/run.sh` | `powershell -File scripts\run.ps1` |
+| Bỏ bước pull code | `./scripts/run.sh --no-pull` | `powershell -File scripts\run.ps1 -NoPull` |
+| Chế độ tự động (chỉ restart khi có code mới) | `./scripts/run.sh --auto` | `powershell -File scripts\run.ps1 -Auto` |
 | Tắt / bật tunnel https | `--no-tunnel` / `--tunnel` | `-Tunnel` |
 | https tự ký trong wifi (không cần internet) | `--https` | `-Https` |
-| Đổi cổng | `PORT=9000 ./scripts/run.sh` | `$env:PORT=9000; .\windows\run.cmd` |
-| Dừng | `./scripts/stop.sh` | `windows\stop.cmd` |
+| Đổi cổng | `PORT=9000 ./scripts/run.sh` | `$env:PORT=9000; powershell -File scripts\run.ps1` |
+| Dừng | `./scripts/stop.sh` | `powershell -File scripts\stop.ps1` |
 | Chạy không tham số trong cửa sổ lệnh | hiện menu chọn | hiện menu chọn |
 
 Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng trống kế tiếp** (tối đa 30 cổng) và ghi vào `.run/port`.
@@ -112,7 +114,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 | Link tunnel không hiện | Cần `cloudflared` và internet. Xem `logs/tunnel.log`; chạy lại `run` |
 | Icon ScanApp báo "chưa chạy được" | Xem `logs/server.log`, `logs/launcher.log` |
 | Cổng 8000 bận | Không cần làm gì, app tự chọn cổng khác. Xem cổng thật trong `.run/port` |
-| Lỗi thiếu DLL `onnxruntime` (Windows) | Chạy lại `windows\run.cmd` (cài VC++ runtime) |
+| Lỗi thiếu DLL `onnxruntime` (Windows) | Chạy lại `powershell -File scripts\run.ps1` (cài VC++ runtime) |
 | `git pull` lỗi đăng nhập | Chỉ xảy ra nếu repo private: chạy `git fetch` một lần để đăng nhập |
 | Sau cập nhật server không lên | Script đã tự quay về bản cũ. Báo người phát triển kèm `logs/server.err.log` |
 | Ô màu sơn / số loại / số khung sai | Các ô này luôn ở trạng thái "cần soát" vì OCR hay nhầm; so với cà vẹt rồi sửa |
@@ -156,9 +158,8 @@ scan-app/
 ├── windows/              # icon + cửa sổ ScanApp trên Windows
 │   ├── Cai-Dat.cmd       # bấm đúp: cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
 │   ├── install.ps1 / uninstall.cmd / uninstall.ps1
-│   ├── make-shortcut.cmd / make-shortcut.ps1   # tạo lại icon ScanApp
-│   ├── open-app.ps1      # cửa sổ native (WinForms): tự cài / tự bật / hiện QR + link
-│   └── run.cmd / stop.cmd  # chạy / dừng bằng tay
+│   ├── make-shortcut.ps1 # tạo lại icon ScanApp
+│   └── open-app.ps1      # cửa sổ native (WinForms): tự cài / tự bật / hiện QR + link
 └── logs/                 # log chạy máy (không đưa lên git)
 ```
 

@@ -1,5 +1,5 @@
 ﻿# tunnel.ps1 - giữ link https (Cloudflare) sống: Cloudflare từ chối tạm thời (429) hoặc tunnel rớt thì tự thử lại sau 20 giây.
-# run.ps1 -Tunnel tự gọi (chạy ẩn); tắt bằng stop.cmd. Log: logs\tunnel.log
+# run.ps1 -Tunnel tự gọi (chạy ẩn); tắt bằng stop.ps1. Log: logs\tunnel.log
 param([int]$Port = 8000, [switch]$Https)
 $ErrorActionPreference = 'Continue'
 $log = Join-Path (Split-Path -Parent $PSScriptRoot) 'logs\tunnel.log'

@@ -6,13 +6,13 @@
 #   B3. Kiểm tra (cú pháp, test, import) - lỗi thì hoàn tác code, KHÔNG đụng server đang chạy
 #   B4. Start nếu chưa chạy, restart nếu đang chạy (kèm health check, lỗi thì quay về bản cũ)
 #
-# Dùng:  .\windows\run.cmd                 (bấm đúp cũng được)
-#        .\windows\run.cmd -NoPull         (bỏ B2)
-#        .\windows\run.cmd -Tunnel         (thêm link https công khai cho điện thoại; cần cloudflared)
-#        .\windows\run.cmd                 (không tham số: hiện menu chọn)
-#        .\windows\run.cmd -Open          (xong thì mở trình duyệt; icon ngoài Desktop dùng cách này)
-#        .\windows\run.cmd -Auto           (chế độ tự động: chỉ restart khi có code mới - dùng cho Task Scheduler)
-# Dừng:  .\stop.cmd
+# Dùng:  .\scripts\run.ps1                 (bấm đúp cũng được)
+#        .\scripts\run.ps1 -NoPull         (bỏ B2)
+#        .\scripts\run.ps1 -Tunnel         (thêm link https công khai cho điện thoại; cần cloudflared)
+#        .\scripts\run.ps1                 (không tham số: hiện menu chọn)
+#        .\scripts\run.ps1 -Open          (xong thì mở trình duyệt; icon ngoài Desktop dùng cách này)
+#        .\scripts\run.ps1 -Auto           (chế độ tự động: chỉ restart khi có code mới - dùng cho Task Scheduler)
+# Dừng:  .\scripts\stop.ps1
 # =============================================================================
 [CmdletBinding()]
 param([switch]$NoPull, [switch]$Auto, [switch]$Tunnel, [switch]$Https, [switch]$Open, [int]$Port = 8000)
@@ -95,7 +95,7 @@ function Ensure-Firewall {
         New-NetFirewallRule -DisplayName $name -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Private, Domain | Out-Null
         Log "Đã mở cổng $Port trong Windows Firewall (mạng Private)."
     } else {
-        Warn "Chưa mở firewall nên điện thoại có thể không vào được. Chạy PowerShell bằng quyền Administrator và chạy lại .\windows\run.cmd một lần."
+        Warn "Chưa mở firewall nên điện thoại có thể không vào được. Chạy PowerShell bằng quyền Administrator và chạy lại .\scripts\run.ps1 một lần."
     }
 }
 function Sync-Deps {
@@ -287,5 +287,5 @@ if ($Tunnel) {
     }
 }
 if ($QrArgs.Count -gt 0) { try { Write-Host ''; & $VenvPy (Join-Path $Root 'backend\qr_print.py') @QrArgs; Write-Host '' } catch { } }   # QR quét bằng điện thoại, xếp cạnh nhau
-Write-Host '   Log         : logs\server.log, logs\server.err.log      Dừng: .\stop.cmd'
+Write-Host '   Log         : logs\server.log, logs\server.err.log      Dừng: .\scripts\stop.ps1'
 if ($Open) { Start-Process $(if ($Https) { "https://localhost:$Port/" } else { "http://localhost:$Port/" }) }   # icon Desktop: mở giao diện (đầu trang có QR cho điện thoại)

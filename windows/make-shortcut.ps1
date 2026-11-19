@@ -1,6 +1,6 @@
 ﻿# make-shortcut.ps1 - tạo MỘT icon "ScanApp" ngoài Desktop + Start Menu: bấm = cửa sổ ScanApp
 #   (chưa cài thì tự cài, chưa chạy thì tự bật server ngầm, rồi hiện QR + link cho điện thoại)
-# Dùng:  .\make-shortcut.cmd      (không cần quyền Administrator; install.ps1 cũng tự gọi)
+# Dùng:  .\windows\make-shortcut.ps1      (không cần quyền Administrator; install.ps1 cũng tự gọi)
 param([switch]$AllUsers)
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
