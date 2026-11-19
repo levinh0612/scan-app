@@ -170,6 +170,7 @@ scan-app/
 ├── uninstall.cmd/.ps1    # Windows: gỡ
 ├── setup-autostart.ps1   # Windows: cách tự chạy đời cũ (đã được install.ps1 thay thế)
 ├── make-mac-app.sh       # macOS: tạo ScanApp.app + ScanApp Cài đặt.app
+├── tunnel.ps1            # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
 ├── make-shortcut.cmd/.ps1 + open-app.ps1   # Windows: tạo 2 icon; việc icon ScanApp làm
 └── requirements.txt
 ```
@@ -188,8 +189,8 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 - Ngưỡng "đủ nét" (khung xanh/đỏ) chưa chỉnh trên điện thoại thật.
 - "Đã ra giấy" chỉ biết hộp thoại in đã đóng, không biết giấy ra thật.
 - Hàng đợi lệnh in nằm trong RAM; restart là mất.
-- Link tunnel đổi mỗi lần chạy lại, công khai, chưa có PIN.
-- Script Windows chưa kiểm chứng trên máy thật; `install.ps1` chưa dùng tunnel.
+- Link tunnel đổi mỗi lần chạy lại, công khai, chưa có PIN. Tunnel tự thử lại (20 giây/lần) khi Cloudflare từ chối hoặc rớt.
+- Script Windows (kể cả `tunnel.ps1`) chưa kiểm chứng trên máy thật; `install.ps1` chưa bật tunnel khi mở máy.
 
 ## 10. Lộ trình
 

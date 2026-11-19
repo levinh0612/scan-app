@@ -234,7 +234,7 @@ echo "   Máy tính   ${SCHEME}://localhost:${PORT}"
 if [ -n "${IP:-}" ]; then
   echo "   Cùng wifi  ${SCHEME}://${IP}:${PORT}"
   [ "$HTTPS" = "1" ] && echo "   (lần đầu điện thoại báo \"không an toàn\": bấm Nâng cao → Tiếp tục)"
-  WIFI_QR="$(.venv/bin/python backend/qr_print.py "Cùng wifi=${SCHEME}://${IP}:${PORT}" 2>/dev/null || true)"
+  WIFI_QR=""; [ "$TUNNEL" != "1" ] && WIFI_QR="$(.venv/bin/python backend/qr_print.py "Cùng wifi=${SCHEME}://${IP}:${PORT}" 2>/dev/null || true)"   # có tunnel thì chỉ hiện QR link https
   if [ -n "$WIFI_QR" ]; then echo; echo "$WIFI_QR"; echo; QR_LINES=$(( $(echo "$WIFI_QR" | wc -l) + 2 )); fi   # in ngay, không chờ tunnel
 fi
 if [ "$TUNNEL" = "1" ]; then
@@ -246,7 +246,7 @@ if [ "$TUNNEL" = "1" ]; then
     nohup bash -c 'while true; do cloudflared tunnel "$@" 2>&1; sleep 20; : > "$0"; done' "$LOG_DIR/tunnel.log" $([ "$HTTPS" = "1" ] && echo --no-tls-verify) --url "${SCHEME}://localhost:${PORT}" >> "$LOG_DIR/tunnel.log" 2>&1 &
     echo $! > "$RUN_DIR/tunnel.pid"
     URL=""
-    printf "   Link https  đang tạo (QR wifi ở trên dùng được ngay)"
+    printf "   Link https  đang tạo (chờ vài giây)"
     for _ in $(seq 1 100); do                       # kiểm tra mỗi 0,3 giây, tối đa 30 giây
       URL="$(grep -aoE 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOG_DIR/tunnel.log" | head -1 || true)"
       [ -n "$URL" ] && break; printf "."; sleep 0.3
@@ -262,9 +262,8 @@ if [ "$TUNNEL" = "1" ]; then
     fi
     printf "\r\033[K"
     if [ -n "$URL" ]; then
-      BOTH=""
-      [ -n "${IP:-}" ] && BOTH="$(.venv/bin/python backend/qr_print.py "Cùng wifi=${SCHEME}://${IP}:${PORT}" "Link https=$URL" 2>/dev/null || true)"
-      [ -n "$BOTH" ] && [ -t 1 ] && [ "${QR_LINES:-0}" -gt 0 ] && printf "\033[%dA\033[J" "$QR_LINES"   # xoá QR wifi cũ, vẽ lại 2 cột đúng chỗ đó
+      BOTH=""   # chỉ hiện link https (camera điện thoại chỉ chạy trên https)
+      [ -t 1 ] && [ "${QR_LINES:-0}" -gt 0 ] && printf "\033[%dA\033[J" "$QR_LINES"   # xoá QR wifi cũ, vẽ lại 2 cột đúng chỗ đó
       echo "   Link https $URL"
       echo "              (dùng được camera; KHÔNG có mật khẩu, chỉ gửi người tin cậy)"
       if [ -n "$BOTH" ]; then echo; echo "$BOTH"; echo
