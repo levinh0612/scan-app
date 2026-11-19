@@ -3,11 +3,12 @@
 # Dùng:  .\make-shortcut.cmd      (không cần quyền Administrator; install.ps1 cũng tự gọi)
 param([switch]$AllUsers)
 $ErrorActionPreference = 'Stop'
-$ico = Join-Path $PSScriptRoot 'assets\scanapp.ico'
+$Root = Split-Path -Parent $PSScriptRoot
+$ico = Join-Path $Root 'assets\scanapp.ico'
 if (-not (Test-Path $ico)) { Write-Host 'Thiếu assets\scanapp.ico' -ForegroundColor Red; exit 1 }
 $desk = [Environment]::GetFolderPath($(if ($AllUsers) { 'CommonDesktopDirectory' } else { 'Desktop' }))
 $menu = [Environment]::GetFolderPath($(if ($AllUsers) { 'CommonPrograms' } else { 'Programs' }))
-$run = Join-Path $PSScriptRoot 'run.ps1'; $open = Join-Path $PSScriptRoot 'open-app.ps1'
+$run = Join-Path $Root 'scripts\run.ps1'; $open = Join-Path $PSScriptRoot 'open-app.ps1'
 $sh = New-Object -ComObject WScript.Shell
 $defs = @(
     @{ Name = 'ScanApp.lnk'; Args = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$open`""; Desc = 'ScanApp - quét giấy tờ (tự cài, tự bật, hiện QR + link)'; Win = 7 }
@@ -19,7 +20,7 @@ foreach ($dir in @($desk, $menu)) {
         $lnk = $sh.CreateShortcut((Join-Path $dir $d.Name))
         $lnk.TargetPath = 'powershell.exe'
         $lnk.Arguments = $d.Args
-        $lnk.WorkingDirectory = $PSScriptRoot
+        $lnk.WorkingDirectory = $Root
         $lnk.IconLocation = "$ico,0"
         $lnk.WindowStyle = $d.Win
         $lnk.Description = $d.Desc

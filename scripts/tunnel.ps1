@@ -2,7 +2,7 @@
 # run.ps1 -Tunnel tự gọi (chạy ẩn); tắt bằng stop.cmd. Log: logs\tunnel.log
 param([int]$Port = 8000, [switch]$Https)
 $ErrorActionPreference = 'Continue'
-$log = Join-Path $PSScriptRoot 'logs\tunnel.log'
+$log = Join-Path (Split-Path -Parent $PSScriptRoot) 'logs\tunnel.log'
 $args2 = if ($Https) { @('tunnel', '--no-tls-verify', '--url', "https://localhost:$Port") } else { @('tunnel', '--url', "http://localhost:$Port") }
 while ($true) {
     Remove-Item $log -Force -ErrorAction SilentlyContinue

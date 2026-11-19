@@ -30,7 +30,7 @@ app tự điền vào "HỢP ĐỒNG CẦM ĐỒ", đánh dấu ô thiếu/khôn
 Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), tab **Kết nối**.
 
 > ⚠️ Link tunnel **công khai, chưa có mật khẩu/PIN**. Chỉ gửi người tin cậy. Thêm PIN nằm trong lộ trình.
-> Tắt tunnel: `./run.sh --no-tunnel` (khi đó camera điện thoại chỉ chạy nếu dùng `--https` trong wifi, xem mục 5).
+> Tắt tunnel: `./scripts/run.sh --no-tunnel` (khi đó camera điện thoại chỉ chạy nếu dùng `--https` trong wifi, xem mục 5).
 
 ---
 
@@ -53,8 +53,8 @@ Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
 | Máy | Lấy code | Bấm đúp |
 |---|---|---|
-| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`Cai-Dat.command`** |
-| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`Cai-Dat.cmd`** (chọn Yes khi Windows hỏi quyền) |
+| **Mac** (đã thử) | `git clone https://github.com/levinh0612/scan-app.git` | **`macos/Cai-Dat.command`** |
+| **Windows 10/11** (chưa thử trên máy thật) | `git clone https://github.com/levinh0612/scan-app.git C:\scan-app` | **`windows\Cai-Dat.cmd`** (chọn Yes khi Windows hỏi quyền) |
 
 Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa sổ ScanApp:
 
@@ -64,13 +64,13 @@ Xong là có **một icon ScanApp** ngoài Desktop. Bấm vào thì hiện cửa
 
 **Mac** — `Cai-Dat.command` chỉ tạo icon (biên dịch cửa sổ Swift, cần Xcode Command Line Tools — đã có sẵn nếu máy có git) rồi mở nó.
 macOS không cho app mở từ Finder đọc `~/Documents` nên việc cài/chạy giao cho một cửa sổ Terminal thu nhỏ (lần đầu có thể hỏi quyền điều khiển Terminal → OK).
-Dời thư mục `scan-app` thì bấm lại `Cai-Dat.command`.
+Dời thư mục `scan-app` thì bấm lại `macos/Cai-Dat.command`.
 
 **Windows** — `Cai-Dat.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
 và **ScanApp-Update** (30 phút kéo code mới từ GitHub, kiểm tra, restart giữ nguyên link; bản mới lỗi thì tự quay về bản cũ;
 đang có lệnh in chờ thì hoãn) cùng icon ScanApp. Nếu bấm icon khi chưa cài, cửa sổ tự chạy cài đặt (Windows hỏi quyền → Yes).
 Tuỳ chọn: `-Port 9000`, `-Https` (https tự ký trong wifi thay vì link internet), `-Token` (repo private).
-Gỡ: `uninstall.cmd`. Chỉ tạo lại icon: `make-shortcut.cmd`.
+Gỡ: `windows\uninstall.cmd`. Chỉ tạo lại icon: `windows\make-shortcut.cmd`.
 
 **Máy in:** cài driver, đặt khổ giấy mặc định **A5 dọc**; trong hộp thoại in của Chrome/Edge: lề **None**, tỉ lệ **100%**,
 tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong router và tắt Sleep.
@@ -81,13 +81,13 @@ tắt **Headers and footers**. Nên đặt IP cố định cho máy tính trong 
 
 | Việc | macOS / Linux | Windows |
 |---|---|---|
-| Cài + cập nhật + chạy (B1→B4) | `./run.sh` | `run.cmd` |
-| Bỏ bước pull code | `./run.sh --no-pull` | `run.cmd -NoPull` |
-| Chế độ tự động (chỉ restart khi có code mới) | `./run.sh --auto` | `run.cmd -Auto` |
+| Cài + cập nhật + chạy (B1→B4) | `./scripts/run.sh` | `windows\run.cmd` |
+| Bỏ bước pull code | `./scripts/run.sh --no-pull` | `windows\run.cmd -NoPull` |
+| Chế độ tự động (chỉ restart khi có code mới) | `./scripts/run.sh --auto` | `windows\run.cmd -Auto` |
 | Tắt / bật tunnel https | `--no-tunnel` / `--tunnel` | `-Tunnel` |
 | https tự ký trong wifi (không cần internet) | `--https` | `-Https` |
-| Đổi cổng | `PORT=9000 ./run.sh` | `$env:PORT=9000; .\run.cmd` |
-| Dừng | `./stop.sh` | `stop.cmd` |
+| Đổi cổng | `PORT=9000 ./scripts/run.sh` | `$env:PORT=9000; .\windows\run.cmd` |
+| Dừng | `./scripts/stop.sh` | `windows\stop.cmd` |
 | Chạy không tham số trong cửa sổ lệnh | hiện menu chọn | hiện menu chọn |
 
 Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng trống kế tiếp** (tối đa 30 cổng) và ghi vào `.run/port`.
@@ -96,7 +96,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 
 | Bước | Việc làm |
 |---|---|
-| **B1. Tài nguyên** | Cài git, Python ≥ 3.10, VC++ runtime (Windows) nếu thiếu; tạo `.venv`; cài thư viện khi `requirements.txt` đổi |
+| **B1. Tài nguyên** | Cài git, Python ≥ 3.10, VC++ runtime (Windows) nếu thiếu; tạo `.venv`; cài thư viện khi `backend/requirements.txt` đổi |
 | **B2. Pull** | `git pull --ff-only`; bỏ qua + cảnh báo nếu chưa có remote, có sửa đổi chưa commit, hoặc mất mạng |
 | **B3. Kiểm tra** | Biên dịch code, chạy test (nếu có trên máy), thử `import app`. Lỗi → hoàn tác, **không đụng server đang chạy** |
 | **B4. Khởi động** | Chưa chạy → start; đang chạy → restart, chờ `/api/health` tối đa 30 giây, không lên thì quay về bản cũ |
@@ -112,7 +112,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 | Link tunnel không hiện | Cần `cloudflared` và internet. Xem `logs/tunnel.log`; chạy lại `run` |
 | Icon ScanApp báo "chưa chạy được" | Xem `logs/server.log`, `logs/launcher.log` |
 | Cổng 8000 bận | Không cần làm gì, app tự chọn cổng khác. Xem cổng thật trong `.run/port` |
-| Lỗi thiếu DLL `onnxruntime` (Windows) | Chạy lại `run.cmd` (cài VC++ runtime) |
+| Lỗi thiếu DLL `onnxruntime` (Windows) | Chạy lại `windows\run.cmd` (cài VC++ runtime) |
 | `git pull` lỗi đăng nhập | Chỉ xảy ra nếu repo private: chạy `git fetch` một lần để đăng nhập |
 | Sau cập nhật server không lên | Script đã tự quay về bản cũ. Báo người phát triển kèm `logs/server.err.log` |
 | Ô màu sơn / số loại / số khung sai | Các ô này luôn ở trạng thái "cần soát" vì OCR hay nhầm; so với cà vẹt rồi sửa |
@@ -141,19 +141,25 @@ scan-app/
 │   ├── printers.py       # hỏi hệ điều hành về trạng thái máy in
 │   ├── qr_print.py       # vẽ QR trong cửa sổ lệnh
 │   ├── make_cert.py      # chứng chỉ tự ký cho --https
+│   ├── requirements.txt  # thư viện Python
 │   └── selfcheck.py      # bước B3 (cú pháp + test nếu có + import)
 ├── frontend/index.html   # giao diện: chụp, form, xem trước A5, Lệnh in, Kết nối
 ├── assets/               # icon (scanapp.png / .ico) + make_icon.py vẽ lại icon
-├── run.sh / stop.sh      # macOS/Linux (trong Git Bash tự chuyển sang PowerShell)
-├── run.cmd / run.ps1     # Windows: cài + cập nhật + chạy
-├── stop.cmd / stop.ps1   # Windows: dừng
-├── Cai-Dat.command       # Mac: bấm đúp để cài (run.sh + make-mac-app.sh)
-├── Cai-Dat.cmd / install.ps1   # Windows: bấm đúp để cài tự chạy + tự cập nhật + icon
-├── uninstall.cmd/.ps1    # Windows: gỡ
-├── make-mac-app.sh       # macOS: tạo ScanApp.app (cửa sổ native Swift, nguồn ở macos/ScanApp.swift)
-├── tunnel.ps1            # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
-├── make-shortcut.cmd/.ps1 + open-app.ps1   # Windows: tạo icon ScanApp = cửa sổ cài/bật/hiện QR
-└── requirements.txt
+├── scripts/              # "động cơ" chạy server (cài + cập nhật + chạy + dừng)
+│   ├── run.sh / stop.sh  # macOS/Linux (trong Git Bash tự chuyển sang PowerShell)
+│   ├── run.ps1 / stop.ps1  # Windows
+│   └── tunnel.ps1        # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
+├── macos/                # icon + cửa sổ ScanApp trên Mac
+│   ├── Cai-Dat.command   # bấm đúp: tạo icon ScanApp ra Desktop rồi mở
+│   ├── make-mac-app.sh   # biên dịch ScanApp.swift thành ScanApp.app
+│   └── ScanApp.swift     # cửa sổ native: tự cài / tự bật server / hiện QR + link
+├── windows/              # icon + cửa sổ ScanApp trên Windows
+│   ├── Cai-Dat.cmd       # bấm đúp: cài tự chạy + tự cập nhật + icon (cần quyền Administrator)
+│   ├── install.ps1 / uninstall.cmd / uninstall.ps1
+│   ├── make-shortcut.cmd / make-shortcut.ps1   # tạo lại icon ScanApp
+│   ├── open-app.ps1      # cửa sổ native (WinForms): tự cài / tự bật / hiện QR + link
+│   └── run.cmd / stop.cmd  # chạy / dừng bằng tay
+└── logs/                 # log chạy máy (không đưa lên git)
 ```
 
 File test và benchmark chỉ có trên máy phát triển, không nằm trong repo.

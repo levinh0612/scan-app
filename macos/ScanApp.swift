@@ -41,7 +41,7 @@ func findBase() -> String? {
 
 func startViaTerminal() {
     try? FileManager.default.removeItem(atPath: LOG)
-    let sh = "cd '\(ROOT)' && { if [ -x .venv/bin/python ]; then echo '##START'; else echo '##INSTALL'; fi; ./run.sh --auto; echo \"##END $?\"; } 2>&1 | tee \(LOG); exit"
+    let sh = "cd '\(ROOT)' && { if [ -x .venv/bin/python ]; then echo '##START'; else echo '##INSTALL'; fi; ./scripts/run.sh --auto; echo \"##END $?\"; } 2>&1 | tee \(LOG); exit"
     let esc = sh.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
     let script = """
     tell application "Terminal"

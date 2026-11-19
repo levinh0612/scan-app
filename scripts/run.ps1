@@ -6,22 +6,23 @@
 #   B3. Kiểm tra (cú pháp, test, import) - lỗi thì hoàn tác code, KHÔNG đụng server đang chạy
 #   B4. Start nếu chưa chạy, restart nếu đang chạy (kèm health check, lỗi thì quay về bản cũ)
 #
-# Dùng:  .\run.cmd                 (bấm đúp cũng được)
-#        .\run.cmd -NoPull         (bỏ B2)
-#        .\run.cmd -Tunnel         (thêm link https công khai cho điện thoại; cần cloudflared)
-#        .\run.cmd                 (không tham số: hiện menu chọn)
-#        .\run.cmd -Open          (xong thì mở trình duyệt; icon ngoài Desktop dùng cách này)
-#        .\run.cmd -Auto           (chế độ tự động: chỉ restart khi có code mới - dùng cho Task Scheduler)
+# Dùng:  .\windows\run.cmd                 (bấm đúp cũng được)
+#        .\windows\run.cmd -NoPull         (bỏ B2)
+#        .\windows\run.cmd -Tunnel         (thêm link https công khai cho điện thoại; cần cloudflared)
+#        .\windows\run.cmd                 (không tham số: hiện menu chọn)
+#        .\windows\run.cmd -Open          (xong thì mở trình duyệt; icon ngoài Desktop dùng cách này)
+#        .\windows\run.cmd -Auto           (chế độ tự động: chỉ restart khi có code mới - dùng cho Task Scheduler)
 # Dừng:  .\stop.cmd
 # =============================================================================
 [CmdletBinding()]
 param([switch]$NoPull, [switch]$Auto, [switch]$Tunnel, [switch]$Https, [switch]$Open, [int]$Port = 8000)
 
 $ErrorActionPreference = 'Continue'   # lệnh native ghi stderr không làm script chết; ta tự kiểm $LASTEXITCODE
-Set-Location -LiteralPath $PSScriptRoot
+$Root = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $Root
 if ($env:PORT) { $Port = [int]$env:PORT }
 # server đang chạy ở cổng đã tự chọn lần trước → dùng lại cổng đó cho kiểm tra sức khoẻ
-$pf = Join-Path $PSScriptRoot '.run\port'; $sp = Join-Path $PSScriptRoot '.run\server.pid'
+$pf = Join-Path $Root '.run\port'; $sp = Join-Path $Root '.run\server.pid'
 if ((Test-Path $pf) -and (Test-Path $sp) -and (Get-Process -Id ([int](Get-Content $sp)) -ErrorAction SilentlyContinue)) { $Port = [int](Get-Content $pf) }
 
 # ---- Menu chọn (chỉ khi chạy tay, không tham số, có cửa sổ tương tác) ----
@@ -45,12 +46,12 @@ if ($PSBoundParameters.Count -eq 0 -and [Environment]::UserInteractive -and -not
     }
 }
 
-$RunDir  = Join-Path $PSScriptRoot '.run'
-$LogDir  = Join-Path $PSScriptRoot 'logs'
+$RunDir  = Join-Path $Root '.run'
+$LogDir  = Join-Path $Root 'logs'
 $PidFile = Join-Path $RunDir 'server.pid'
 $LogOut  = Join-Path $LogDir 'server.log'
 $LogErr  = Join-Path $LogDir 'server.err.log'
-$VenvPy  = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+$VenvPy  = Join-Path $Root '.venv\Scripts\python.exe'
 New-Item -ItemType Directory -Force -Path $RunDir, $LogDir | Out-Null
 
 function Log($m)  { Write-Host ('[{0}] {1}' -f (Get-Date -Format HH:mm:ss), $m) -ForegroundColor Cyan }
@@ -94,16 +95,16 @@ function Ensure-Firewall {
         New-NetFirewallRule -DisplayName $name -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Private, Domain | Out-Null
         Log "Đã mở cổng $Port trong Windows Firewall (mạng Private)."
     } else {
-        Warn "Chưa mở firewall nên điện thoại có thể không vào được. Chạy PowerShell bằng quyền Administrator và chạy lại .\run.cmd một lần."
+        Warn "Chưa mở firewall nên điện thoại có thể không vào được. Chạy PowerShell bằng quyền Administrator và chạy lại .\windows\run.cmd một lần."
     }
 }
 function Sync-Deps {
-    $want = (Get-FileHash -Path (Join-Path $PSScriptRoot 'requirements.txt') -Algorithm SHA256).Hash
-    $shaFile = Join-Path $PSScriptRoot '.venv\.req.sha'
+    $want = (Get-FileHash -Path (Join-Path $Root 'backend\requirements.txt') -Algorithm SHA256).Hash
+    $shaFile = Join-Path $Root '.venv\.req.sha'
     $have = ''; if (Test-Path $shaFile) { $have = (Get-Content $shaFile -Raw).Trim() }
     if ($want -eq $have) { Log 'Thư viện đã đủ, bỏ qua.'; return }
     Log 'Cài thư viện (lần đầu có thể mất vài phút nếu mạng chậm)...'
-    & $VenvPy -m pip install --default-timeout 60 --retries 5 -q -r (Join-Path $PSScriptRoot 'requirements.txt')
+    & $VenvPy -m pip install --default-timeout 60 --retries 5 -q -r (Join-Path $Root 'backend\requirements.txt')
     if ($LASTEXITCODE -ne 0) { Die 'Cài thư viện thất bại (kiểm tra mạng rồi chạy lại).' }
     Set-Content -Path $shaFile -Value $want -NoNewline
 }
@@ -131,11 +132,11 @@ function Start-Server {
         $ipc = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
                Where-Object { $_.InterfaceAlias -notmatch 'Loopback|vEthernet|Virtual|VMware|Bluetooth' -and $_.IPAddress -notlike '169.254.*' } |
                Select-Object -First 1 -ExpandProperty IPAddress
-        $cert = & $VenvPy (Join-Path $PSScriptRoot 'backend\make_cert.py') "$ipc"
+        $cert = & $VenvPy (Join-Path $Root 'backend\make_cert.py') "$ipc"
         if ($LASTEXITCODE -ne 0 -or $cert.Count -lt 2) { Die 'Không tạo được chứng chỉ https (thiếu thư viện cryptography?)' }
         $args2 += @('--ssl-certfile', $cert[0], '--ssl-keyfile', $cert[1])
     }
-    $p = Start-Process -FilePath $VenvPy -ArgumentList $args2 -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru `
+    $p = Start-Process -FilePath $VenvPy -ArgumentList $args2 -WorkingDirectory $Root -WindowStyle Hidden -PassThru `
          -RedirectStandardOutput $LogOut -RedirectStandardError $LogErr
     Set-Content -Path $PidFile -Value $p.Id
     for ($i = 0; $i -lt 30; $i++) {
@@ -164,7 +165,7 @@ Log ("Python: " + (& $Py --version) + " ($Py)")
 
 if (-not (Test-Path $VenvPy)) {
     Log 'Tạo môi trường ảo .venv'
-    & $Py -m venv (Join-Path $PSScriptRoot '.venv')
+    & $Py -m venv (Join-Path $Root '.venv')
     if (-not (Test-Path $VenvPy)) { Die 'Không tạo được .venv' }
 }
 Sync-Deps
@@ -175,7 +176,7 @@ Log 'B2. Pull code'
 # =============================================================================
 $PrevCommit = ''; $Pulled = $false
 git remote get-url origin *> $null
-$HasRemote = ($LASTEXITCODE -eq 0) -and (Test-Path (Join-Path $PSScriptRoot '.git'))
+$HasRemote = ($LASTEXITCODE -eq 0) -and (Test-Path (Join-Path $Root '.git'))
 if ($NoPull) {
     Log 'Bỏ qua pull (-NoPull).'
 } elseif (-not $HasRemote) {
@@ -211,7 +212,7 @@ function Rollback-Code {
 
 # Chế độ tự động (Task Scheduler): không có gì mới và server khỏe thì thôi, không restart vô ích
 $CommitFile = Join-Path $RunDir 'server.commit'
-$Head = if (Test-Path (Join-Path $PSScriptRoot '.git')) { (git rev-parse HEAD 2>$null | Out-String).Trim() } else { '' }
+$Head = if (Test-Path (Join-Path $Root '.git')) { (git rev-parse HEAD 2>$null | Out-String).Trim() } else { '' }
 $Stale = $Head -and (Test-Path $CommitFile) -and ((Get-Content $CommitFile -Raw).Trim() -ne $Head)   # code trên đĩa mới hơn code đang chạy
 if ($Auto -and -not $Pulled -and -not $Stale -and (Is-Running) -and (Health-Ok)) { Log 'Auto: không có thay đổi, server đang chạy tốt.'; exit 0 }
 # Hàng đợi lệnh in nằm trong RAM: restart sẽ mất. Còn lệnh Chờ in / Đang in thì hoãn, lần chạy sau thử lại.
@@ -225,7 +226,7 @@ if ($Auto -and (Is-Running) -and (Health-Ok)) {
 # =============================================================================
 Log 'B3. Kiểm tra'
 # =============================================================================
-& $VenvPy (Join-Path $PSScriptRoot 'backend\selfcheck.py')
+& $VenvPy (Join-Path $Root 'backend\selfcheck.py')
 if ($LASTEXITCODE -ne 0) {
     Rollback-Code
     Die 'Kiểm tra thất bại. Server đang chạy (nếu có) KHÔNG bị thay đổi.'
@@ -285,6 +286,6 @@ if ($Tunnel) {
         else { Warn 'Chưa lấy được link https, xem logs\tunnel.log' }
     }
 }
-if ($QrArgs.Count -gt 0) { try { Write-Host ''; & $VenvPy (Join-Path $PSScriptRoot 'backend\qr_print.py') @QrArgs; Write-Host '' } catch { } }   # QR quét bằng điện thoại, xếp cạnh nhau
+if ($QrArgs.Count -gt 0) { try { Write-Host ''; & $VenvPy (Join-Path $Root 'backend\qr_print.py') @QrArgs; Write-Host '' } catch { } }   # QR quét bằng điện thoại, xếp cạnh nhau
 Write-Host '   Log         : logs\server.log, logs\server.err.log      Dừng: .\stop.cmd'
 if ($Open) { Start-Process $(if ($Https) { "https://localhost:$Port/" } else { "http://localhost:$Port/" }) }   # icon Desktop: mở giao diện (đầu trang có QR cho điện thoại)

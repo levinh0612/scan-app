@@ -8,7 +8,8 @@
 param([int]$Port = 8000, [switch]$Https, [switch]$Token)
 
 $ErrorActionPreference = 'Stop'
-Set-Location -LiteralPath $PSScriptRoot
+$Root = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $Root
 function Say($m, $c = 'Cyan') { Write-Host $m -ForegroundColor $c }
 
 # --- 1. Windows 10 (1809) trở lên? ---
@@ -27,7 +28,7 @@ if (-not $admin) {
     exit 0
 }
 
-try { Start-Transcript -Path (Join-Path $PSScriptRoot 'logs\install.log') -Force | Out-Null } catch { }   # cửa sổ ScanApp đọc file này để báo tiến độ
+try { Start-Transcript -Path (Join-Path $Root 'logs\install.log') -Force | Out-Null } catch { }   # cửa sổ ScanApp đọc file này để báo tiến độ
 
 # --- 3. Mã truy cập GitHub (repo private, chỉ cần quyền đọc) ---
 if ($Token -and (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -53,13 +54,13 @@ if (-not $Https -and -not (Get-Command cloudflared -ErrorAction SilentlyContinue
 }
 $modeArg = if ($Https) { @('-Https') } elseif (Get-Command cloudflared -ErrorAction SilentlyContinue) { @('-Tunnel') } else { @() }
 Say 'Cài môi trường và chạy thử lần đầu (có thể vài phút)...'
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'run.ps1') -NoPull -Port $Port @modeArg
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Root 'scripts\run.ps1') -NoPull -Port $Port @modeArg
 if ($LASTEXITCODE -ne 0) { Say 'Chạy thử thất bại, chưa tạo tác vụ tự động. Xem thông báo phía trên.' Red; exit 1 }
 
 # --- 5. Tác vụ tự chạy (SYSTEM: không cần ai đăng nhập, chạy ẩn) ---
 $flags = "-Auto -Port $Port" + $(if ($modeArg.Count) { ' ' + $modeArg[0] } else { '' })
-$cmd = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $PSScriptRoot 'run.ps1')`" $flags"
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $cmd -WorkingDirectory $PSScriptRoot
+$cmd = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $Root 'scripts\run.ps1')`" $flags"
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $cmd -WorkingDirectory $Root
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 $set = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -ExecutionTimeLimit (New-TimeSpan -Minutes 30) -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)

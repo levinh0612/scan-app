@@ -1,15 +1,16 @@
 ﻿# open-app.ps1 - icon "ScanApp" (Windows): MỘT cửa sổ duy nhất.
 #   Chưa cài  -> chạy install.ps1 (hỏi quyền Administrator) và báo tiến độ.
 #   Đã cài    -> bật server ngầm nếu chưa chạy, rồi hiện QR + link cho điện thoại, nút mở app.
-Set-Location -LiteralPath $PSScriptRoot
+$Root = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $Root
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 try { [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } } catch { }   # chứng chỉ tự ký trên chính máy này
-New-Item -ItemType Directory -Force -Path (Join-Path $PSScriptRoot 'logs') | Out-Null
-$InstallLog = Join-Path $PSScriptRoot 'logs\install.log'
+New-Item -ItemType Directory -Force -Path (Join-Path $Root 'logs') | Out-Null
+$InstallLog = Join-Path $Root 'logs\install.log'
 
 function Get-Base {
-    $ports = @(8000); $pf = Join-Path $PSScriptRoot '.run\port'
+    $ports = @(8000); $pf = Join-Path $Root '.run\port'
     if (Test-Path $pf) { $ports = @([int](Get-Content $pf)) + $ports }
     foreach ($p in ($ports | Select-Object -Unique)) { foreach ($s in 'http', 'https') {
         try { if ((Invoke-WebRequest -Uri "${s}://127.0.0.1:$p/api/health" -UseBasicParsing -TimeoutSec 2).StatusCode -eq 200) { return "${s}://localhost:$p" } } catch { }
@@ -17,7 +18,7 @@ function Get-Base {
     return $null
 }
 function Test-Installed {
-    (Test-Path (Join-Path $PSScriptRoot '.venv\Scripts\python.exe')) -and [bool](Get-ScheduledTask -TaskName 'ScanApp' -ErrorAction SilentlyContinue)
+    (Test-Path (Join-Path $Root '.venv\Scripts\python.exe')) -and [bool](Get-ScheduledTask -TaskName 'ScanApp' -ErrorAction SilentlyContinue)
 }
 function Get-Mode {   # lấy lại chế độ (-Tunnel / -Https) mà install.ps1 đã đăng ký cho tác vụ
     try { $a = (Get-ScheduledTask -TaskName 'ScanApp' -ErrorAction Stop).Actions[0].Arguments; if ($a -match '-Https') { return '-Https' }; if ($a -match '-Tunnel') { return '-Tunnel' } } catch { }
@@ -38,7 +39,7 @@ function Get-LastLine($path) {
 $f = New-Object Windows.Forms.Form
 $f.Text = 'ScanApp'; $f.ClientSize = New-Object Drawing.Size(480, 700); $f.StartPosition = 'CenterScreen'
 $f.FormBorderStyle = 'FixedSingle'; $f.MaximizeBox = $false; $f.Font = New-Object Drawing.Font('Segoe UI', 12)
-try { $f.Icon = New-Object Drawing.Icon((Join-Path $PSScriptRoot 'assets\scanapp.ico')) } catch { }
+try { $f.Icon = New-Object Drawing.Icon((Join-Path $Root 'assets\scanapp.ico')) } catch { }
 function Add-Label($y, $h, $size, $bold) {
     $l = New-Object Windows.Forms.Label; $l.SetBounds(40, $y, 400, $h); $l.TextAlign = 'MiddleCenter'
     $l.Font = New-Object Drawing.Font('Segoe UI', $size, $(if ($bold) { [Drawing.FontStyle]::Bold } else { [Drawing.FontStyle]::Regular }))
@@ -70,9 +71,9 @@ function Start-Work {
             $st.proc = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -PassThru -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'install.ps1')`""
         } else {
             $st.mode = 'start'
-            $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $PSScriptRoot 'run.ps1')`"", '-Auto'); $m = Get-Mode; if ($m) { $a += $m }
+            $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$(Join-Path $Root 'scripts\run.ps1')`"", '-Auto'); $m = Get-Mode; if ($m) { $a += $m }
             $st.proc = Start-Process powershell.exe -WindowStyle Hidden -PassThru -ArgumentList $a `
-                -RedirectStandardOutput (Join-Path $PSScriptRoot 'logs\launcher.log') -RedirectStandardError (Join-Path $PSScriptRoot 'logs\launcher.err.log')
+                -RedirectStandardOutput (Join-Path $Root 'logs\launcher.log') -RedirectStandardError (Join-Path $Root 'logs\launcher.err.log')
         }
     } catch { $st.mode = 'denied' }
 }

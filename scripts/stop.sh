@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # stop.sh — dừng server (nhẹ nhàng trước, ép buộc sau 15 giây)
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 case "$(uname -s)" in   # Windows (Git Bash) → PowerShell
-  MINGW*|MSYS*|CYGWIN*) exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$PWD/stop.ps1")";;
+  MINGW*|MSYS*|CYGWIN*) exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$PWD/scripts/stop.ps1")";;
 esac
 
 PORT="${PORT:-8000}"

@@ -8,14 +8,14 @@
 #   (chạy không tham số trong terminal → hiện menu chọn)
 #   B4. Start nếu chưa chạy, restart nếu đang chạy (kèm health check, lỗi thì quay về bản cũ)
 #
-# Dùng:  ./run.sh              (đầy đủ B1-B4)
-#        ./run.sh --no-pull    (bỏ B2)
-#        ./run.sh --tunnel     (thêm link https công khai để điện thoại dùng camera; cần cloudflared)
-#        PORT=9000 ./run.sh    (đổi cổng, mặc định 8000)
-# Dừng:  ./stop.sh
+# Dùng:  ./scripts/run.sh              (đầy đủ B1-B4)
+#        ./scripts/run.sh --no-pull    (bỏ B2)
+#        ./scripts/run.sh --tunnel     (thêm link https công khai để điện thoại dùng camera; cần cloudflared)
+#        PORT=9000 ./scripts/run.sh    (đổi cổng, mặc định 8000)
+# Dừng:  ./scripts/stop.sh
 # =============================================================================
 set -Eeuo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 PORT="${PORT:-8000}"
 RUN_DIR=".run"; LOG_DIR="logs"; PID_FILE="$RUN_DIR/server.pid"; LOG_FILE="$LOG_DIR/server.log"
@@ -29,7 +29,7 @@ case "$(uname -s)" in
     for a in "$@"; do
       case "$a" in --no-pull) PS_ARGS+=("-NoPull");; --auto) PS_ARGS+=("-Auto");; --tunnel) PS_ARGS+=("-Tunnel");; --https) PS_ARGS+=("-Https");; *) PS_ARGS+=("$a");; esac
     done
-    exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$PWD/run.ps1")" "${PS_ARGS[@]}"
+    exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$PWD/scripts/run.ps1")" "${PS_ARGS[@]}"
     ;;
 esac
 
@@ -61,7 +61,7 @@ if [ "$#" -eq 0 ] && [ -t 0 ] && [ -t 1 ]; then
     1) ;;
     2) DO_PULL=0;;
     3) DO_PULL=0; TUNNEL=1;;
-    4) exec ./stop.sh;;
+    4) exec ./scripts/stop.sh;;
     5) DO_PULL=0; HTTPS=1;;
     0) exit 0;;
     *) echo "Lựa chọn không hợp lệ."; exit 2;;
@@ -96,15 +96,15 @@ find_python() {   # in ra đường dẫn python >= 3.10
 
 sha() { if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi; }
 
-sync_deps() {     # chỉ cài lại khi requirements.txt đổi
-  local want have=""; want="$(sha requirements.txt)"
+sync_deps() {     # chỉ cài lại khi backend/requirements.txt đổi
+  local want have=""; want="$(sha backend/requirements.txt)"
   [ -f .venv/.req.sha ] && have="$(cat .venv/.req.sha)"
   if [ "$want" = "$have" ]; then log "Thư viện đã đủ, bỏ qua."; return 0; fi
   log "Cài thư viện (lần đầu có thể mất vài phút nếu mạng chậm)..."
   if command -v uv >/dev/null 2>&1; then
-    uv pip install --python .venv/bin/python -r requirements.txt
+    uv pip install --python .venv/bin/python -r backend/requirements.txt
   else
-    .venv/bin/python -m pip install --default-timeout 60 --retries 5 -q -r requirements.txt
+    .venv/bin/python -m pip install --default-timeout 60 --retries 5 -q -r backend/requirements.txt
   fi
   echo "$want" > .venv/.req.sha
 }
@@ -128,7 +128,7 @@ start_server() {
   if ! is_running; then   # cổng bận bởi chương trình khác → tự chọn cổng trống kế tiếp (tối đa 30 cổng)
     local want="$PORT" n=0
     while port_busy "$PORT" && [ "$n" -lt 30 ]; do PORT=$((PORT + 1)); n=$((n + 1)); done
-    port_busy "$PORT" && die "Không tìm được cổng trống từ ${want}. Đổi cổng: PORT=9000 ./run.sh"
+    port_busy "$PORT" && die "Không tìm được cổng trống từ ${want}. Đổi cổng: PORT=9000 ./scripts/run.sh"
     [ "$PORT" != "$want" ] && warn "Cổng ${want} đang bị chương trình khác dùng → dùng cổng ${PORT}."
   fi
   echo "$PORT" > "$RUN_DIR/port"
@@ -211,14 +211,14 @@ log "B4. Khởi động"
 # =============================================================================
 if is_running; then
   log "Server đang chạy (PID $(cat "$PID_FILE")) → restart"
-  ./stop.sh --keep-tunnel
+  ./scripts/stop.sh --keep-tunnel
 else
   log "Server chưa chạy → start"
 fi
 
 if ! start_server; then
   warn "Server không lên được. 20 dòng log cuối:"; tail -n 20 "$LOG_FILE" >&2 || true
-  ./stop.sh --keep-tunnel || true
+  ./scripts/stop.sh --keep-tunnel || true
   if [ "$PULLED" -eq 1 ]; then
     rollback_code
     log "Thử chạy lại bản cũ..."
@@ -278,4 +278,4 @@ if [ "$TUNNEL" = "1" ]; then
     fi
   fi
 fi
-echo "   Log         : $LOG_FILE      Dừng: ./stop.sh"
+echo "   Log         : $LOG_FILE      Dừng: ./scripts/stop.sh"

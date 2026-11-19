@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # make-mac-app.sh — tạo icon macOS "ScanApp" (cửa sổ native: tự cài / tự bật server / hiện QR + link).
-# Dùng:  ./make-mac-app.sh            → tạo ~/Desktop/ScanApp.app
-#        ./make-mac-app.sh /Applications   → tạo ở thư mục khác
+# Dùng:  ./macos/make-mac-app.sh            → tạo ~/Desktop/ScanApp.app
+#        ./macos/make-mac-app.sh /Applications   → tạo ở thư mục khác
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 [ "$(uname -s)" = "Darwin" ] || { echo "Script này chỉ dành cho macOS."; exit 1; }
 ROOT="$PWD"
 DEST="${1:-$HOME/Desktop}"
