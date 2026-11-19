@@ -9,7 +9,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import printers
@@ -572,6 +572,18 @@ def links(request: Request):
     if t:
         items.append({"label": "Link https", "note": "Dùng được camera, mở từ mọi nơi", "url": t, "qr": _qr_uri(t)})
     return {"items": items}
+
+
+@app.get("/api/qr.png")
+def qr_png(u: str = ""):
+    """Ảnh QR (PNG) cho cửa sổ ScanApp trên máy tính (không hiểu SVG)."""
+    import io
+    import segno
+    if not u or len(u) > 300:
+        raise HTTPException(400, "thiếu địa chỉ")
+    buf = io.BytesIO()
+    segno.make(u, error="l", boost_error=False).save(buf, kind="png", scale=8, border=2)
+    return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/printer")

@@ -27,6 +27,8 @@ if (-not $admin) {
     exit 0
 }
 
+try { Start-Transcript -Path (Join-Path $PSScriptRoot 'logs\install.log') -Force | Out-Null } catch { }   # cửa sổ ScanApp đọc file này để báo tiến độ
+
 # --- 3. Mã truy cập GitHub (repo private, chỉ cần quyền đọc) ---
 if ($Token -and (Get-Command git -ErrorAction SilentlyContinue)) {
     Say 'Dán mã truy cập GitHub (Fine-grained token, chỉ quyền Contents: Read-only) rồi Enter. Mã không hiện lên màn hình.' Yellow

@@ -1,6 +1,5 @@
-﻿# make-shortcut.ps1 - tạo 2 icon ngoài Desktop + Start Menu:
-#   "ScanApp"            (người dùng) bấm = mở app trên trình duyệt, tự bật server ngầm nếu chưa chạy
-#   "ScanApp - Cài đặt"  (người cài/sửa lỗi) bấm = cửa sổ hiện QR + link + log
+﻿# make-shortcut.ps1 - tạo MỘT icon "ScanApp" ngoài Desktop + Start Menu: bấm = cửa sổ ScanApp
+#   (chưa cài thì tự cài, chưa chạy thì tự bật server ngầm, rồi hiện QR + link cho điện thoại)
 # Dùng:  .\make-shortcut.cmd      (không cần quyền Administrator; install.ps1 cũng tự gọi)
 param([switch]$AllUsers)
 $ErrorActionPreference = 'Stop'
@@ -11,11 +10,11 @@ $menu = [Environment]::GetFolderPath($(if ($AllUsers) { 'CommonPrograms' } else 
 $run = Join-Path $PSScriptRoot 'run.ps1'; $open = Join-Path $PSScriptRoot 'open-app.ps1'
 $sh = New-Object -ComObject WScript.Shell
 $defs = @(
-    @{ Name = 'ScanApp.lnk'; Args = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$open`""; Desc = 'ScanApp - mở app quét giấy tờ'; Win = 7 },
-    @{ Name = 'ScanApp - Cai dat.lnk'; Args = "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$run`" -Open"; Desc = 'ScanApp - cài đặt: hiện QR + link + log'; Win = 1 }
+    @{ Name = 'ScanApp.lnk'; Args = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$open`""; Desc = 'ScanApp - quét giấy tờ (tự cài, tự bật, hiện QR + link)'; Win = 7 }
 )
 foreach ($dir in @($desk, $menu)) {
     if (-not $dir -or -not (Test-Path $dir)) { continue }
+    Remove-Item (Join-Path $dir 'ScanApp - Cai dat.lnk') -Force -ErrorAction SilentlyContinue   # icon thứ hai của bản cũ
     foreach ($d in $defs) {
         $lnk = $sh.CreateShortcut((Join-Path $dir $d.Name))
         $lnk.TargetPath = 'powershell.exe'
@@ -28,4 +27,4 @@ foreach ($dir in @($desk, $menu)) {
         Write-Host "Đã tạo: $(Join-Path $dir $d.Name)" -ForegroundColor Green
     }
 }
-Write-Host 'ScanApp: bấm là mở app (QR cho điện thoại ở đầu trang). ScanApp - Cai dat: cửa sổ QR + link + log.'
+Write-Host 'Bấm icon ScanApp: tự cài (nếu chưa) + tự bật + hiện QR và link cho điện thoại.'
