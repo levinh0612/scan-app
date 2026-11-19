@@ -27,7 +27,7 @@ app tự điền vào "HỢP ĐỒNG CẦM ĐỒ", đánh dấu ô thiếu/khôn
 
 **Điện thoại vào bằng link nào?** Camera trình duyệt điện thoại chỉ chạy trên **https**. Mặc định `run` mở thêm
 **tunnel Cloudflare** để có link `https://….trycloudflare.com` (đổi mỗi lần chạy lại, không phụ thuộc wifi tiệm).
-Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), tab **Kết nối**, và cửa sổ "ScanApp Cài đặt".
+Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), tab **Kết nối**, và (tuỳ chọn) icon "ScanApp Cài đặt".
 
 > ⚠️ Link tunnel **công khai, chưa có mật khẩu/PIN**. Chỉ gửi người tin cậy. Thêm PIN nằm trong lộ trình.
 > Tắt tunnel: `./run.sh --no-tunnel` (khi đó camera điện thoại chỉ chạy nếu dùng `--https` trong wifi, xem mục 5).
@@ -41,7 +41,7 @@ Link hiện ở: đầu trang app (mã QR nhỏ, rê chuột để phóng to), t
 | Mở app | Bấm icon **ScanApp** ngoài Desktop → trình duyệt mở app (server chưa chạy thì tự bật ngầm, chờ vài giây) |
 | Lấy QR cho điện thoại | Nhìn **đầu trang** app, hoặc tab **Kết nối** → quét bằng camera điện thoại |
 | Quét giấy tờ | Trên điện thoại: tab **Hồ sơ mới** → chụp CCCD, cà vẹt |
-| Xem lỗi / link / log | Bấm icon **ScanApp Cài đặt** (cho người cài) |
+| Xem lỗi / link / log | Mở file `logs/server.log`, hoặc chạy `./run.sh` (Mac muốn có icon riêng: `./make-mac-app.sh --full`) |
 
 Trên máy Windows đã chạy `Cai-Dat.cmd`, server tự chạy khi bật máy nên chỉ cần bấm **ScanApp**.
 
@@ -58,8 +58,8 @@ Tải code về (cần Git), rồi **bấm đúp 1 file**:
 
 Xong là có icon **ScanApp** ngoài Desktop; mở lên là dùng. Điện thoại quét QR ở đầu trang app (link https, không cần cùng wifi).
 
-**Mac** — `Cai-Dat.command` cài môi trường, chạy thử, tạo 2 icon: **ScanApp** (tự bật server ngầm rồi mở app, 6–30 giây)
-và **ScanApp Cài đặt** (QR + link + log). macOS không cho app mở từ Finder đọc `~/Documents` nên việc khởi động giao cho Terminal
+**Mac** — `Cai-Dat.command` cài môi trường, chạy thử, tạo icon **ScanApp** (tự bật server ngầm rồi mở app, 6–30 giây)
+(thêm `--full` cho `make-mac-app.sh` nếu muốn icon **ScanApp Cài đặt** hiện QR + link + log). macOS không cho app mở từ Finder đọc `~/Documents` nên việc khởi động giao cho Terminal
 (lần đầu có thể hỏi quyền điều khiển Terminal → OK). Dời thư mục `scan-app` thì bấm lại `Cai-Dat.command`.
 
 **Windows** — `Cai-Dat.cmd` cài môi trường + cloudflared (link https), mở firewall, tạo 2 tác vụ ngầm: **ScanApp** (bật máy 30 giây là chạy)
@@ -105,7 +105,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 | Điện thoại không mở được link | Dùng link `https://….trycloudflare.com` (QR đầu trang). Link wifi `192.168.x.x` thường bị router chặn (client isolation) |
 | Camera trên điện thoại không bật | Camera chỉ chạy trên https. Dùng link tunnel, đừng dùng link `http://` |
 | Link tunnel không hiện | Cần `cloudflared` và internet. Xem `logs/tunnel.log`; chạy lại `run` |
-| Icon ScanApp báo "chưa chạy được" | Mở **ScanApp Cài đặt** xem lỗi, hoặc `logs/launcher.log` |
+| Icon ScanApp báo "chưa chạy được" | Xem `logs/server.log` và `logs/launcher.log` |
 | Cổng 8000 bận | Không cần làm gì, app tự chọn cổng khác. Xem cổng thật trong `.run/port` |
 | Lỗi thiếu DLL `onnxruntime` (Windows) | Chạy lại `run.cmd` (cài VC++ runtime) |
 | `git pull` lỗi đăng nhập | Chỉ xảy ra nếu repo private: chạy `git fetch` một lần để đăng nhập |
@@ -145,7 +145,7 @@ scan-app/
 ├── Cai-Dat.command       # Mac: bấm đúp để cài (run.sh + make-mac-app.sh)
 ├── Cai-Dat.cmd / install.ps1   # Windows: bấm đúp để cài tự chạy + tự cập nhật + icon
 ├── uninstall.cmd/.ps1    # Windows: gỡ
-├── make-mac-app.sh       # macOS: tạo ScanApp.app + ScanApp Cài đặt.app
+├── make-mac-app.sh       # macOS: tạo ScanApp.app (--full: thêm ScanApp Cài đặt.app)
 ├── tunnel.ps1            # Windows: giữ link https sống, tự thử lại khi Cloudflare từ chối/rớt
 ├── make-shortcut.cmd/.ps1 + open-app.ps1   # Windows: tạo 2 icon; việc icon ScanApp làm
 └── requirements.txt

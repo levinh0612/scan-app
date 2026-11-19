@@ -6,6 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 [ "$(uname -s)" = "Darwin" ] || { echo "Script này chỉ dành cho macOS."; exit 1; }
 ROOT="$PWD"
+FULL=0; [ "${1:-}" = "--full" ] && { FULL=1; shift; }   # --full: thêm icon "ScanApp Cài đặt"
 DEST="${1:-$HOME/Desktop}"
 PY=".venv/bin/python"; [ -x "$PY" ] || PY="python3"
 [ -f assets/scanapp.png ] || "$PY" assets/make_icon.py
@@ -64,11 +65,12 @@ end tell
 O
   for _ in \$(seq 1 90); do sleep 2; alive && break; done
 fi
-if alive; then open "\$URL"; else osascript -e 'display alert "ScanApp chưa chạy được" message "Mở ScanApp Cài đặt để xem lỗi."'; fi
+if alive; then open "\$URL"; else osascript -e 'display alert "ScanApp chưa chạy được" message "Xem lỗi trong file logs/server.log (hoặc chạy ./run.sh)."'; fi
 L
 chmod +x "$APP/Contents/MacOS/ScanApp"; touch "$APP"
 
-# --- 2. ScanApp Cài đặt: cho người cài/sửa lỗi. Cửa sổ Terminal hiện QR + link + log. ---
+# --- 2. (tuỳ chọn, chỉ khi chạy với --full) ScanApp Cài đặt: Terminal hiện QR + link + log. ---
+if [ "${FULL:-0}" = 1 ]; then
 APP2="$(mk_app "ScanApp Cài đặt" setup)"
 cat > "$APP2/Contents/MacOS/ScanApp" <<L
 #!/bin/bash
@@ -82,8 +84,9 @@ end tell
 O
 L
 chmod +x "$APP2/Contents/MacOS/ScanApp"; touch "$APP2"
+fi
 
 echo "Đã tạo trong $DEST:"
 echo "  - ScanApp            : bấm đúp = mở app trên trình duyệt (tự bật server ngầm nếu chưa chạy). QR cho điện thoại ở đầu trang."
-echo "  - ScanApp Cài đặt    : cửa sổ Terminal hiện QR + link + log (cho người cài/sửa lỗi)."
+[ "${FULL:-0}" = 1 ] && echo "  - ScanApp Cài đặt    : cửa sổ Terminal hiện QR + link + log (cho người cài/sửa lỗi)."
 echo "Kéo ScanApp vào Dock nếu muốn. Lần đầu nếu macOS hỏi quyền điều khiển Terminal → chọn OK."
