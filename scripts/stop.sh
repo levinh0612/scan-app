@@ -29,9 +29,12 @@ stop_pid() {
 }
 
 STOPPED=0
-[ "${1:-}" != "--keep-tunnel" ] && rm -f .run/tunnel.want   # bỏ dấu "cần tunnel" trước, kẻo server tự bật lại
+[ "${1:-}" != "--keep-tunnel" ] && touch .run/stopped   # đánh dấu đang dừng trước, kẻo server tự bật lại tunnel
 if [ "${1:-}" != "--keep-tunnel" ] && [ -f ".run/tunnel.pid" ]; then   # tắt tunnel https; --keep-tunnel = restart server mà giữ nguyên link
   TP="$(cat .run/tunnel.pid)"; pkill -P "$TP" 2>/dev/null; kill "$TP" 2>/dev/null; rm -f .run/tunnel.pid   # vòng giám sát + cloudflared con
+fi
+if [ "${1:-}" != "--keep-tunnel" ]; then   # dọn nốt tiến trình mồ côi (pid file mất / vòng giám sát lạc): vòng bash + cloudflared của app này
+  pkill -f "while true; do cloudflared tunnel" 2>/dev/null; pkill -f "cloudflared tunnel --url http" 2>/dev/null; rm -f .run/tunnel.pid
 fi
 if [ -f "$PID_FILE" ]; then
   PID="$(cat "$PID_FILE")"

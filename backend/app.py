@@ -29,14 +29,17 @@ app = FastAPI(title="Scan cầm đồ")
 
 
 def _tunnel_watchdog() -> None:
-    """Tunnel https chết (bị kill, máy ngủ…) thì tự bật lại, để chủ tiệm không phải làm gì. Chỉ chạy khi có .run/tunnel.want (run.sh ghi)."""
+    """Tunnel https chết (bị kill, máy ngủ, run.sh bị ngắt giữa chừng…) thì tự bật lại, chủ tiệm không phải làm gì.
+    Không bật khi: đang dừng thủ công (.run/stopped) hoặc chạy với --no-tunnel (.run/no-tunnel)."""
     import time
     root = Path(__file__).resolve().parent.parent
+    run = root / ".run"
     while True:
-        time.sleep(15)
+        time.sleep(10)
         try:
-            want = (root / ".run" / "tunnel.want").read_text().split()
-            pid = int((root / ".run" / "tunnel.pid").read_text().strip()) if (root / ".run" / "tunnel.pid").exists() else 0
+            if (run / "stopped").exists() or (run / "no-tunnel").exists():
+                continue
+            pid = int((run / "tunnel.pid").read_text().strip()) if (run / "tunnel.pid").exists() else 0
             alive = False
             if pid:
                 try:
@@ -45,9 +48,11 @@ def _tunnel_watchdog() -> None:
                 except OSError:
                     pass
             if not alive:
-                subprocess.run([str(root / "scripts" / "tunnel.sh"), *want[:2]], timeout=20, capture_output=True)
+                scheme = (run / "scheme").read_text().strip() if (run / "scheme").exists() else "http"
+                port = (run / "port").read_text().strip() if (run / "port").exists() else "8000"
+                subprocess.run([str(root / "scripts" / "tunnel.sh"), scheme, port], timeout=20, capture_output=True)
         except Exception:
-            pass                                             # không có .want = không dùng tunnel, hoặc tạm lỗi: thử lại vòng sau
+            pass                                             # tạm lỗi: thử lại vòng sau
 
 
 @app.on_event("startup")

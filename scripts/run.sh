@@ -136,6 +136,7 @@ start_server() {
     [ "$PORT" != "$want" ] && warn "Cổng ${want} đang bị chương trình khác dùng → dùng cổng ${PORT}."
   fi
   echo "$PORT" > "$RUN_DIR/port"
+  echo "$SCHEME" > "$RUN_DIR/scheme"; if [ "$TUNNEL" = "1" ]; then rm -f "$RUN_DIR/no-tunnel"; else touch "$RUN_DIR/no-tunnel"; fi   # server đọc để tự bật lại tunnel
   nohup .venv/bin/python -m uvicorn app:app --app-dir backend --host 0.0.0.0 --port "$PORT" ${SSL_ARGS[@]+"${SSL_ARGS[@]}"} >> "$LOG_FILE" 2>&1 &
   echo $! > "$PID_FILE"
   for _ in $(seq 1 30); do
