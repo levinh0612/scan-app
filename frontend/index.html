@@ -124,8 +124,8 @@ button,input,textarea{font:inherit;color:inherit}
 .f.check input,.f.check textarea{border-color:#e0a050;background:#fffaf0}
 .f.missing input,.f.missing textarea{border-color:#e36a7a;background:#fff8f8}
 .f input:focus,.f textarea:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 4px var(--blue-bg)}
-.pcrop{display:block;max-width:100%;max-height:64px;margin:4px 0 6px;border:1px solid var(--line,#ccc);border-radius:6px;background:#fff}
-@media print{.pcrop{display:none!important}}
+.pshot span{flex:none}
+@media print{.pshot{display:none!important}}
 .f .note{margin-top:8px;font-size:var(--fs-small);color:var(--text2);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .f.missing .note{color:var(--bad);font-weight:600}.f.check .note{color:var(--warn);font-weight:600}
 .f .yes{min-height:44px;padding:0 20px;border-radius:22px;border:0;background:var(--warn);color:#fff;font-size:var(--fs-label);font-weight:600;cursor:pointer}
@@ -438,6 +438,26 @@ body{padding-top:calc(52px + env(safe-area-inset-top))}
 .printbar .printer-note.blocked{color:#b3261e;font-weight:600;text-align:left;cursor:pointer}
 @media (min-width:1000px){.printbar{bottom:96px}}
 .app{padding-bottom:calc(var(--tabh) + 190px)}
+
+/* ===== Giao diện kiểu Apple cho phiếu trên màn hình (không ảnh hưởng bản in) ===== */
+@media screen{
+  .phieu{background:#fff;border:0;border-radius:24px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px rgba(0,0,0,.07);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:#1c1c1e}
+  .phieu .psub{color:rgba(60,60,67,.6)}
+  #phieu .pr label,#phieu .pr i{color:#3c3c43;line-height:42px}
+  #phieu .ei{height:42px;padding:0 12px;border:0;border-radius:12px;background:rgba(120,120,128,.12);color:#1c1c1e;font:600 19px/42px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Arial,sans-serif;box-shadow:none;transition:background .15s,box-shadow .15s}
+  #phieu .ei::placeholder{color:rgba(60,60,67,.38);font-weight:400;font-size:17px}
+  #phieu .ei:focus{outline:none;border:0;background:#fff;box-shadow:inset 0 0 0 1.5px #007aff,0 0 0 4px rgba(0,122,255,.22)}
+  #phieu .ei.check{background:rgba(255,149,0,.13);box-shadow:inset 0 0 0 1.5px rgba(255,149,0,.5)}
+  #phieu .ei.missing{background:rgba(255,59,48,.09);box-shadow:inset 0 0 0 1.5px rgba(255,59,48,.45)}
+  #phieu .ei.check:focus,#phieu .ei.missing:focus{background:#fff;box-shadow:inset 0 0 0 1.5px #007aff,0 0 0 4px rgba(0,122,255,.22)}
+  #phieu .auto{border:0;height:42px;line-height:42px;padding:0 12px;border-radius:12px;background:rgba(120,120,128,.08);color:#1c1c1e;font:600 19px/42px -apple-system,BlinkMacSystemFont,system-ui,Arial,sans-serif}
+  #phieu #a-words{height:auto;line-height:1.4;padding:9px 12px;font-size:16px;font-weight:500}
+  #phieu .pnote{font:500 13px/1.4 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:#b25e00;margin:6px 4px 0}
+  .pshot{display:flex;width:fit-content;max-width:100%;align-items:center;gap:10px;margin:8px 0 0;padding:5px 12px 5px 6px;border-radius:14px;background:rgba(120,120,128,.08);font:500 12px/1.2 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:rgba(60,60,67,.6);text-transform:none;letter-spacing:0}
+  .pshot img{height:36px;width:auto;max-width:min(240px,60vw);object-fit:contain;border-radius:9px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.15);cursor:zoom-in;transition:height .2s}
+  .pshot img.tall{height:auto;max-height:84px;max-width:min(320px,72vw)}
+  .pshot img.big{height:auto;max-height:150px;max-width:calc(100vw - 110px);cursor:zoom-out}
+}
 </style>
 </head>
 <body data-step="1">
@@ -629,7 +649,7 @@ function autoGrow(t){t.style.height='auto';t.style.height=t.scrollHeight+'px';}
 function dateIn(k){const s=st(k),p=(s.value||'').split('/');
   const one=(i,cls,max,ph)=>`<input class="ei ${s.status} ${cls}" data-dk="${k}" data-p="${i}" value="${esc(p[i]||'')}" inputmode="numeric" maxlength="${max}" placeholder="${ph}" autocomplete="off" aria-label="${esc(LBL[k])} — ${['ngày','tháng','năm'][i]}">`;
   return `${one(0,'d2',2,'ng')}<label>tháng</label>${one(1,'d2',2,'th')}<label>năm</label>${one(2,'d4',4,'năm')}`;}
-const note=k=>`<div class="pnote" id="n-${k}"></div><img class="pcrop" id="c-${k}" alt="Chữ trên giấy tờ" hidden>`;
+const note=k=>`<div class="pshot" id="c-${k}" hidden><span>Trên giấy tờ</span><img alt="Chữ trên giấy tờ"></div><div class="pnote" id="n-${k}"></div>`;
 function renderPhieu(){
   const [dd,mm,yy]=today().split('/');
   $('#phieu').innerHTML=`<h3 class="pt">HỢP ĐỒNG CẦM ĐỒ</h3><div class="psub">( Kiêm Phiếu Chi Tiền )</div>
@@ -698,7 +718,7 @@ function paintSw(){const w=mauList();document.querySelectorAll('#sw button').for
   x.querySelectorAll('button').forEach(b=>b.onclick=()=>{setMau(mauList().filter(y=>y!==b.dataset.x));paintSw();});}
 const crops={};   // ảnh cắt quanh chữ trên giấy tờ (từ máy chủ) để đối chiếu; không lưu vào phiếu
 function paintStatus(){paintSw();
-  document.querySelectorAll('#phieu .pcrop').forEach(im=>{const c=crops[im.id.slice(2)];if(c){im.src=c;im.hidden=false;}else im.hidden=true;});
+  document.querySelectorAll('#phieu .pshot').forEach(b=>{const c=crops[b.id.slice(2)],im=b.querySelector('img');if(c){if(im.src!==c){im.onload=()=>im.classList.toggle('tall',im.naturalHeight/im.naturalWidth>.09);im.src=c;}b.hidden=false;}else b.hidden=true;});
   document.querySelectorAll('#phieu [data-k],#phieu [data-dk]').forEach(i=>{const s=st(i.dataset.k||i.dataset.dk);i.classList.remove('ok','check','missing');i.classList.add(s.status);});
   NOTE_KEYS.forEach(k=>{const el=$('#n-'+k);if(!el)return;const s=st(k);
     el.textContent=s.value&&s.note&&s.status!=='ok'?(s.status==='check'?'⚠ ':'')+s.note:'';});
@@ -867,12 +887,17 @@ function peekLoop(){
     if(!$('#cam').hidden)peekLoop();
   },700);
 }
-function peekShow(d){peekQR=camKey==='cccd_back'&&!!(d.qr&&d.fields&&d.fields.cccd&&d.fields.ho_ten&&d.fields.dia_chi);
+let peekSeq=0;
+function peekShow(d){peekSeq++;peekQR=camKey==='cccd_back'&&!!(d.qr&&d.fields&&d.fields.cccd&&d.fields.ho_ten&&d.fields.dia_chi);
   
   for(const[k,v]of Object.entries(d.fields||{})){        // gom: ô nào đã đọc được thì giữ lại, khung sau đọc hỏng cũng không mất
-    const p=peekAcc[k];if(!v.value)continue;
-    if(!p||(p.status!=='ok'&&v.status==='ok')||(p.status===v.status&&v.value!==p.value&&p.n<2&&v.status==='ok'))peekAcc[k]={value:v.value,status:v.status,n:1};
-    else if(p.value===v.value)p.n++;
+    if(!v.value)continue;       // bỏ phiếu theo khung hình, ưu tiên khung GẦN ĐÂY và khung NÉT: tay run → khung mờ gần như không có tiếng nói; giữ yên → khung nét đẩy giá trị sai cũ ra
+    const p=peekAcc[k]||(peekAcc[k]={votes:{},value:'',status:'check',n:0});
+    const w=d.sharp>=SHARP_OK?1:(d.sharp>=SHARP_OK*0.6?0.3:0);
+    if(!p.fresh||p.fresh!==peekSeq){for(const x of Object.values(p.votes))x.n*=0.7;p.fresh=peekSeq;}     // mỗi khung hình: phiếu cũ giảm 30%
+    const e=p.votes[v.value]||(p.votes[v.value]={n:0,ok:false});e.n+=w;e.ok=e.ok||(v.status==='ok'&&w>0);
+    let best=v.value,bs=-1;for(const[val,x]of Object.entries(p.votes)){const sc=x.n+(x.ok?.8:0)+(val===v.value&&w>0?.1:0);if(sc>bs){bs=sc;best=val;}}
+    p.value=best;p.status=p.votes[best].ok?'ok':'check';p.n=p.votes[best].n;
     liveAcc[k]={value:peekAcc[k].value,status:peekAcc[k].status};
   }
   const f={};for(const[k,v]of Object.entries(peekAcc))f[k]={value:v.value,status:v.status};
@@ -883,9 +908,9 @@ function peekShow(d){peekQR=camKey==='cccd_back'&&!!(d.qr&&d.fields&&d.fields.cc
     const nodau=k==='ho_ten'&&v&&v.value&&!/[^\x00-\x7f]/.test(v.value);     // OCR không ra dấu: đủ dấu chỉ có trong mã QR
     return v&&v.value?`<div class="r ${v.status==='ok'&&!nodau?'ok':'chk'}"><span>${PEEK_NAMES[k]||k}</span><b>${esc(v.value)}${nodau?'<small>chưa có dấu — sẽ đủ dấu khi quét mã QR ở mặt sau</small>':''}</b></div>`:`<div class="r bad"><span>${PEEK_NAMES[k]||k}</span><b>Chưa đọc được</b></div>`;}).join('');
   const exp=PEEK_EXPECT[camKey]||[],miss=exp.filter(k=>!(f[k]&&f[k].value)).map(k=>PEEK_NAMES[k]||k);
-  const SOK=d.sharp>=SHARP_OK;$('#camFrame').dataset.s=SOK?'ok':'bad';       // khung xanh = đủ nét, đỏ = chưa nét
+  const GLARE=(d.glare||0)>0.03;const SOK=d.sharp>=SHARP_OK&&!GLARE;$('#camFrame').dataset.s=SOK?'ok':'bad';       // khung xanh = đủ nét, đỏ = chưa nét
   const chk=Object.values(f).some(v=>v.status!=='ok');
-  const sharp=!SOK?`<div class="q bad">Chưa đủ nét (${d.sharp}/${SHARP_OK}) — giữ yên máy, lùi ra một chút, đủ sáng</div>`:(miss.length?`<div class="q no">Ảnh nét. Đã đọc ${exp.length-miss.length}/${exp.length} ô — còn thiếu: ${miss.join(', ')}. Cứ giữ máy, ô đã đọc được sẽ được nhớ lại.</div>`:`<div class="q ok">Ảnh nét, đã đọc đủ — ${chk?'xem lại các ô vàng rồi ':''}bấm chụp</div>`);
+  const sharp=GLARE?`<div class="q bad">Bị loá sáng — nghiêng máy một chút để tránh bóng đèn</div>`:!SOK?`<div class="q bad">Chưa đủ nét (${d.sharp}/${SHARP_OK}) — giữ yên máy, lùi ra một chút, đủ sáng</div>`:(miss.length?`<div class="q no">Ảnh nét. Đã đọc ${exp.length-miss.length}/${exp.length} ô — còn thiếu: ${miss.join(', ')}. Cứ giữ máy, ô đã đọc được sẽ được nhớ lại.</div>`:`<div class="q ok">Ảnh nét, đã đọc đủ — ${chk?'xem lại các ô vàng rồi ':''}bấm chụp</div>`);
   $('#camLive').innerHTML=sharp+rows;
   const KEYF={cavet:['bks','so_khung','so_may'],cccd_front:['cccd','ho_ten'],cccd_back:['cccd','ho_ten','dia_chi']}[camKey]||[];
   const cur=d.fields||{},sig=KEYF.map(k=>cur[k]&&cur[k].value||'').join('|');   // giá trị đọc ở CHÍNH khung hình này
@@ -1002,6 +1027,7 @@ function renderQueue(){
     return `<div class="job"><div class="row1"><div class="who">${esc(j.bks||'Chưa có biển số')}<small>${esc(j.chu||'')}${j.xe?' · '+esc(j.xe):''}</small></div><span class="badge ${j.status}">${STATUS_TXT[j.status]}</span></div>
       <p class="meta">${hhmm(j.created)}${j.lan>1?` · đã in ${j.lan} lần`:''}</p>${j.status==='loi'&&j.note?`<p class="meta" style="color:#b3261e;font-weight:600">${esc(j.note)}</p>`:''}<div class="jact">${act}</div></div>`;}).join('');
 }
+document.addEventListener('click',e=>{const im=e.target.closest('.pshot img');if(im)im.classList.toggle('big');});   // chạm ảnh đối chiếu để phóng to / thu nhỏ
 $('#jobList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-j]');if(!b)return;const id=b.dataset.id,a=b.dataset.j;
   if(a==='print')printJob(id);

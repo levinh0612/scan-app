@@ -248,10 +248,7 @@ if [ "$TUNNEL" = "1" ]; then
     if [ -f "$RUN_DIR/tunnel.pid" ] && kill -0 "$(cat "$RUN_DIR/tunnel.pid")" 2>/dev/null && grep -aqE 'trycloudflare\.com' "$LOG_DIR/tunnel.log" 2>/dev/null; then
       :   # tunnel đang chạy từ lần trước → giữ nguyên để link không đổi (cập nhật tự động chạy lại run.sh định kỳ)
     else
-    : > "$LOG_DIR/tunnel.log"
-    # Vòng giám sát: Cloudflare hay từ chối tạm thời (429 khi tạo link liên tục) hoặc tunnel rớt → tự thử lại sau 20 giây, không cần chạy lại run.sh
-    nohup bash -c 'while true; do cloudflared tunnel "$@" 2>&1; sleep 20; : > "$0"; done' "$LOG_DIR/tunnel.log" $([ "$HTTPS" = "1" ] && echo --no-tls-verify) --url "${SCHEME}://localhost:${PORT}" >> "$LOG_DIR/tunnel.log" 2>&1 &
-    echo $! > "$RUN_DIR/tunnel.pid"
+    ./scripts/tunnel.sh "$SCHEME" "$PORT"   # vòng giám sát: Cloudflare từ chối/rớt → tự thử lại; server cũng tự bật lại nếu vòng này chết
     fi
     URL=""
     printf "   Link https  đang tạo (chờ vài giây)"

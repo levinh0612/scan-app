@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import math
 import os
 import re
 import subprocess
@@ -25,6 +26,34 @@ from validators import (check_cccd, check_plate, fix_vin_like, normalize_plate,
 
 ROOT = Path(__file__).resolve().parent.parent
 app = FastAPI(title="Scan cầm đồ")
+
+
+def _tunnel_watchdog() -> None:
+    """Tunnel https chết (bị kill, máy ngủ…) thì tự bật lại, để chủ tiệm không phải làm gì. Chỉ chạy khi có .run/tunnel.want (run.sh ghi)."""
+    import time
+    root = Path(__file__).resolve().parent.parent
+    while True:
+        time.sleep(15)
+        try:
+            want = (root / ".run" / "tunnel.want").read_text().split()
+            pid = int((root / ".run" / "tunnel.pid").read_text().strip()) if (root / ".run" / "tunnel.pid").exists() else 0
+            alive = False
+            if pid:
+                try:
+                    os.kill(pid, 0)
+                    alive = True
+                except OSError:
+                    pass
+            if not alive:
+                subprocess.run([str(root / "scripts" / "tunnel.sh"), *want[:2]], timeout=20, capture_output=True)
+        except Exception:
+            pass                                             # không có .want = không dùng tunnel, hoặc tạm lỗi: thử lại vòng sau
+
+
+@app.on_event("startup")
+def _start_watchdog() -> None:
+    if os.name != "nt":
+        threading.Thread(target=_tunnel_watchdog, daemon=True).start()
 
 _ocr = None
 
@@ -62,16 +91,51 @@ def _upscale(img: np.ndarray) -> np.ndarray:
     return _unsharp(cv2.resize(enhance(img), None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC))
 
 
+def flatten(img: np.ndarray) -> np.ndarray:
+    """Làm phẳng nền: chia cho nền ước lượng → nền trắng đều (hết bóng đổ, ngả màu), chữ giữ sắc độ mềm.
+    (Nhị phân hoá cứng đen/trắng đã đo: đọc TỆ hơn, vì hoa văn nền làm chữ đứt/dính.)"""
+    g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    bg = cv2.GaussianBlur(cv2.dilate(g, np.ones((15, 15), np.uint8)), (0, 0), 25)
+    n = np.clip(g / np.maximum(bg, 1) * 255, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(n, cv2.COLOR_GRAY2BGR)
+
+
 # Các lượt đọc cà vẹt: mỗi lượt xử lý ảnh khác nhau để lỗi ngẫu nhiên của lượt này bị lượt kia sửa
-CAVET_RUNS = (("clahe", enhance, 1.0), ("raw", lambda im: im, 1.0), ("up", _upscale, 1.5))
+CAVET_RUNS = (("clahe", enhance, 1.0), ("raw", lambda im: im, 1.0), ("up", _upscale, 1.5), ("flat", flatten, 1.0))
+
+
+def skew_angle(lines: list[Line]) -> float:
+    """Góc nghiêng trung vị của các dòng chữ dài (độ). 0 nếu không đủ dữ liệu."""
+    a = sorted(l.angle for l in lines if len(l.text) >= 8 and (l.box[2] - l.box[0]) > 2.5 * (l.box[3] - l.box[1]) / 1.0)
+    return a[len(a) // 2] if len(a) >= 3 else 0.0
+
+
+def rotate_img(img: np.ndarray, deg: float) -> np.ndarray:
+    h, w = img.shape[:2]
+    M = cv2.getRotationMatrix2D((w / 2, h / 2), deg, 1.0)
+    c, s = abs(M[0, 0]), abs(M[0, 1])
+    nw, nh = int(h * s + w * c), int(h * c + w * s)
+    M[0, 2] += nw / 2 - w / 2
+    M[1, 2] += nh / 2 - h / 2
+    return cv2.warpAffine(img, M, (nw, nh), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+
+
+def deskew(img: np.ndarray, lines: list[Line]):
+    """Xoay ảnh cho dòng chữ nằm ngang khi nghiêng ≥1° (và ≤25°). Trả (ảnh, dòng OCR tương ứng)."""
+    ang = skew_angle(lines)
+    if not (1.0 <= abs(ang) <= 25.0):
+        return img, lines
+    rot = rotate_img(img, ang)               # getRotationMatrix2D: góc dương = xoay ngược chiều kim đồng hồ → bù đúng chiều nghiêng xuống phải
+    return rot, run_ocr(rot, "deskew")
 
 
 def read_cavet_multi(img: np.ndarray, qr: str | None, warnings: list, tag: str = "cavet"):
     """Đọc cà vẹt nhiều lượt + bỏ phiếu từng ô + cắt ảnh đối chiếu. Trả (kết quả, dòng OCR lượt đầu)."""
     import multiread
+    img, first = deskew(img, run_ocr(img, f"{tag}:probe"))
     outs, all_lines = [], []
     for name, pre, sc in CAVET_RUNS:
-        lines = run_ocr(img, f"{tag}:{name}", pre, sc)
+        lines = first if name == "clahe" else run_ocr(img, f"{tag}:{name}", pre, sc)    # lượt CLAHE đã chạy khi dò góc nghiêng → dùng lại
         o: dict = {}
         parse_cavet(lines, qr, o, warnings if not outs else [])
         outs.append(o)
@@ -118,6 +182,8 @@ class Line:
         xs = [p[0] / scale for p in box]
         self.y, self.x = sum(ys) / 4, min(xs)
         self.box = (min(xs), min(ys), max(xs), max(ys))
+        (x0, y0), (x1, y1) = box[0], box[1]        # cạnh trên của khung chữ → góc nghiêng của dòng (độ, dương = nghiêng xuống phải)
+        self.angle = math.degrees(math.atan2(y1 - y0, x1 - x0)) if x1 > x0 else 0.0
 
 
 def run_ocr(img: np.ndarray, tag: str = "", pre=None, scale: float = 1.0) -> list[Line]:
@@ -251,6 +317,8 @@ def fix_honda_ids(khung: str, may: str, loai: str):
                 if len(k) == 18 and c[3:7] == key:
                     k, nk = c, "Máy đã tự bỏ 1 ký tự thừa"
                     break
+        if len(k) in (17, 18) and k[3:7] != key and sum(x != y for x, y in zip(k[3:7], key)) == 1:
+            k, nk = k[:3] + key + k[7:], (nk + "; " if nk else "") + "Máy đã tự sửa 1 ký tự (vd J↔U) cho khớp số máy"
         if k[2] in "B8" and k[3:7] == key and len(k) in (17, 18):
             k, nk = k[:2] + "H" + k[3:], (nk + "; " if nk else "") + "Máy đã tự sửa chữ thứ 3 thành H"
     if loai and k[3:7] == key and loai[:4] != key and sum(a != b for a, b in zip(loai[:4], key)) == 1:
@@ -557,6 +625,7 @@ async def peek(kind: str = Form(...), image: UploadFile = File(...)):
         raise HTTPException(400, "Ảnh không hợp lệ")
     g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     sharp = float(cv2.Laplacian(g, cv2.CV_64F).var())
+    glare = float((g >= 250).mean())          # tỉ lệ điểm cháy sáng (bóng đèn/phản chiếu lên thẻ nhựa)
     qr = read_qr(img)
     lines = run_ocr(img, "peek")
     out: dict = {}
@@ -566,7 +635,7 @@ async def peek(kind: str = Form(...), image: UploadFile = File(...)):
         parse_cccd(lines, None, qr, out, [])
     else:
         parse_cccd(None, lines, qr, out, [])
-    return {"sharp": round(sharp), "qr": bool(qr),
+    return {"sharp": round(sharp), "glare": round(glare, 3), "qr": bool(qr),
             "fields": {k: {"value": v.get("value", ""), "status": v.get("status")} for k, v in out.items() if v.get("value")}}
 
 
