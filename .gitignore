@@ -20,3 +20,9 @@ uploads/
 backend/test_*.py
 backend/benchmark.py
 backend/bench/
+
+# Kho hợp đồng (dữ liệu cá nhân) — không commit
+data/
+*.db
+*.db-wal
+*.db-shm

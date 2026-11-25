@@ -131,7 +131,7 @@ Cổng mặc định 8000. Nếu bận (vd Docker) thì **tự chọn cổng tr�
 
 ## 6. Bảo mật và dữ liệu cá nhân
 
-- Ảnh CCCD là dữ liệu cá nhân (Nghị định 13/2023). App không lưu ảnh, không gọi dịch vụ OCR ngoài. Log mặc định **che nội dung**
+- Ảnh CCCD là dữ liệu cá nhân (Nghị định 13/2023). App không gọi dịch vụ OCR ngoài. Ảnh giấy tờ của hợp đồng được lưu cục bộ trong `data/anh/` và tự xóa sau số ngày đặt trong Cài đặt (mặc định 90) khi hợp đồng đã đóng. Log mặc định **che nội dung**
   (chỉ ghi dạng ký tự). Bật `SCAN_DEBUG=1` mới ghi chữ gốc, và phải **xoá log sau khi dùng**.
 - **Repo public: không commit ảnh giấy tờ, tên, số CCCD, biển số, số khung thật** (kể cả trong code mẫu hay test).
   `.gitignore` chặn `samples/`, `*.jpg`, `*.png`, file `test_*.py`, `benchmark.py`.
@@ -185,13 +185,13 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 - Ngưỡng "đủ nét" (khung xanh/đỏ) chưa chỉnh trên điện thoại thật.
 - "Đã ra giấy" chỉ biết hộp thoại in đã đóng, không biết giấy ra thật.
 - Hàng đợi lệnh in nằm trong RAM; restart là mất.
-- Link tunnel đổi mỗi lần chạy lại, công khai, chưa có PIN. Tunnel tự thử lại (20 giây/lần) khi Cloudflare từ chối hoặc rớt.
+- Link tunnel đổi mỗi lần chạy lại và công khai; dữ liệu hợp đồng được bảo vệ bằng PIN (phải đặt PIN ở Cài đặt). Tunnel tự thử lại (20 giây/lần) khi Cloudflare từ chối hoặc rớt.
 - Script Windows (kể cả `tunnel.ps1`) chưa kiểm chứng trên máy thật; `install.ps1` chưa bật tunnel khi mở máy.
 
 ## 9. Lộ trình
 
-1. Thêm mã PIN cho link công khai.
+1. (Đã xong) Mã PIN cho link công khai.
 2. Đồng bộ Windows với tunnel Cloudflare (tự cài `cloudflared`, bật khi mở máy); thử trên máy Windows thật.
 3. Mua máy in, đo lại toạ độ `template.json` bằng giấy mẫu thật; thử chế độ driver trên Windows và `escp` trên máy kim thật.
 4. Đo độ chính xác trên nhiều giấy tờ thật hơn; chỉnh ngưỡng độ nét.
-5. Lưu hồ sơ, tìm kiếm, backup.
+5. (Đã xong) Lưu hồ sơ, tìm kiếm, sao lưu. Xem bộ tài liệu đầy đủ ở `docs/index.html` (mở bằng trình duyệt).

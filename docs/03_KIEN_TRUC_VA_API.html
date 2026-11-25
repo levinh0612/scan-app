@@ -1,0 +1,518 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiến trúc và API · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Kiến trúc và API</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n on" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><div class="toc"><a href="#1-tong-quan">1. Tổng quan</a><a href="#2-cau-truc-ma-nguon">2. Cấu trúc mã nguồn</a><a href="#3-xu-ly-quet-giay-to">3. Xử lý quét giấy tờ</a><a href="#4-bao-mat">4. Bảo mật</a><a href="#5-danh-sach-api">5. Danh sách API</a><a href="#6-in-an">6. In ấn</a><a href="#7-giao-dien-va-quy-uoc-ui">7. Giao diện và quy ước UI</a><a href="#8-chay-va-kiem-tra-tu-dong">8. Chạy và kiểm tra tự động</a></div><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Tài liệu 03</div><h1>Kiến trúc và API</h1><div class="meta"><span class="pill">⏱ 11 phút đọc</span><span class="pill">👤 Dev</span></div></div>
+<article><h2 id="1-tong-quan">1. Tổng quan<a class="a" href="#1-tong-quan">#</a></h2>
+<pre><code> Điện thoại (Safari/Chrome)                     Máy tính ở tiệm (chạy server)
+ ───────────────────────────                    ─────────────────────────────────────────
+  https://xxxx.trycloudflare.com  ──Cloudflare──▶  cloudflared ─▶ FastAPI (Uvicorn :8000)
+        (cần PIN cho dữ liệu hợp đồng)                              │
+                                                                     ├─ frontend/ (tĩnh: HTML/CSS/JS)
+  http://localhost:8000  ───────────────────────────────────────────▶├─ OCR: RapidOCR + OpenCV + zxing
+        (máy chủ: toàn quyền, không PIN)                             ├─ SQLite  data/contracts.db
+                                                                     ├─ Ảnh     data/anh/…
+                                                                     └─ In: render A5 → driver OS (hoặc ESC/P2)
+</code></pre>
+<ul>
+<li><strong>Một tiến trình duy nhất</strong> (FastAPI + Uvicorn), không cần dịch vụ phụ. Trình duyệt tải frontend tĩnh từ cùng server.</li>
+<li><strong>Phân biệt máy chủ và điện thoại</strong> bằng địa chỉ nguồn: yêu cầu từ <code>127.0.0.1</code>/<code>::1</code> và <strong>không có</strong> header proxy (<code>cf-connecting-ip</code>, <code>x-forwarded-for</code>, <code>cf-ray</code>, <code>forwarded</code>) là "máy chủ". Mọi yêu cầu đi qua tunnel đều có header này.</li>
+<li>Tunnel Cloudflare được <code>scripts/*</code> bật và có "người theo dõi" tự bật lại khi chết (không áp dụng cho Windows ở phần theo dõi trong server).</li>
+</ul>
+<h2 id="2-cau-truc-ma-nguon">2. Cấu trúc mã nguồn<a class="a" href="#2-cau-truc-ma-nguon">#</a></h2>
+<pre><code>scan-app/
+├── backend/
+│   ├── app.py               # Khởi tạo FastAPI; API quét/gộp ảnh/xem trước; link-QR; máy in; tắt server; health; phục vụ frontend
+│   ├── routes_contracts.py  # Router: đăng nhập PIN, cài đặt, hợp đồng, thao tác, sao lưu, ảnh
+│   ├── routes_jobs.py       # Router: hàng đợi lệnh in
+│   ├── webutil.py           # Dùng chung: _is_local, _need_local/_need_auth, _guard, _body, _backup_soon
+│   ├── contracts.py         # Nghiệp vụ + truy cập SQLite (lập, gia hạn, chuộc, báo cáo, cảnh báo trùng, sao lưu, khôi phục)
+│   ├── auth.py              # PIN (PBKDF2), phiên, khóa khi sai nhiều lần
+│   ├── settings.py          # data/settings.json, kiểm giới hạn
+│   ├── images.py            # Lưu/đọc/xóa ảnh giấy tờ, dọn ảnh quá hạn
+│   ├── jobs.py              # JobStore (RAM) cho lệnh in
+│   ├── ocr_parse.py         # Phân tích chữ OCR → trường CCCD, cà vẹt
+│   ├── multiread.py         # Đọc cà vẹt nhiều lượt + bỏ phiếu + cắt ảnh đối chiếu
+│   ├── stack.py             # Gộp nhiều khung hình thành 1 ảnh nét hơn
+│   ├── validators.py        # Chuẩn hóa/kiểm tra chéo CCCD, biển số, số khung, ngày; số tiền bằng chữ
+│   ├── layout.py, render.py, template.json   # Vẽ phiếu A5 (tọa độ mm) → ảnh 300dpi
+│   ├── printing.py, printers.py              # Gửi lệnh in từ server; hỏi OS về máy in
+│   ├── qr_print.py, make_cert.py, selfcheck.py, benchmark.py
+│   ├── test_*.py            # Bộ kiểm thử (tự chạy được bằng python, xem tài liệu 06)
+│   └── requirements.txt
+├── frontend/
+│   ├── index.html           # Một trang duy nhất (SPA không framework)
+│   ├── css/                 # 5 file, nạp theo thứ tự: app-core → app-mobile → app-layout → app-features → app-flow
+│   └── js/                  # Script cổ điển dùng chung phạm vi toàn cục; main.js nạp cuối cùng
+├── scripts/                 # run/stop/tunnel (.sh cho macOS/Linux, .ps1 cho Windows), printer-info.ps1
+├── macos/, windows/         # Đóng gói ứng dụng, tạo shortcut/cài đặt
+├── RUN_THIS_FILE_MACOS.command, RUN_THIS_FILE_WIN.cmd   # Bấm đúp để cài + chạy
+├── assets/                  # Biểu tượng
+├── data/                    # DỮ LIỆU (không đưa lên Git)
+└── docs/                    # Tài liệu
+</code></pre>
+<blockquote class="warn"><span class="bt">Lưu ý</span>
+<p>Lưu ý Git: <code>.gitignore</code> đang loại <code>backend/test_*.py</code> và các file benchmark (chứa chuỗi mẫu giống dữ liệu thật). Bộ test chỉ có trên máy dev — người tiếp quản cần xin/giữ bản sao riêng.</p>
+</blockquote>
+<h3 id="frontend-cac-module-js-chinh">Frontend: các module JS chính<a class="a" href="#frontend-cac-module-js-chinh">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Vai trò</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.js</code></td>
+<td>Khởi động, điều hướng tab, kích hoạt các module (nạp cuối)</td>
+</tr>
+<tr>
+<td><code>ui.js</code>, <code>icons.js</code>, <code>help.js</code></td>
+<td>Tiện ích giao diện: modal, sheet, toast, biểu tượng, nội dung nút "?"</td>
+</tr>
+<tr>
+<td><code>capture.js</code></td>
+<td>Camera, tự chụp có đếm ngược, xem lại kết quả đọc, chụp lại</td>
+</tr>
+<tr>
+<td><code>fields.js</code>, <code>rules.js</code>, <code>wizard.js</code>, <code>review-ui.js</code></td>
+<td>Định nghĩa ô, quy tắc, trình hướng dẫn 2 bước, màn "Quét và xác nhận", tooltip "Xác nhận đã đúng"</td>
+</tr>
+<tr>
+<td><code>dup.js</code></td>
+<td>Gọi <code>/api/contracts/check</code>, vẽ khung cảnh báo trùng</td>
+</tr>
+<tr>
+<td><code>print.js</code>, <code>phieu-edit.js</code>, <code>phieu-sheet.js</code></td>
+<td>Màn in phiếu, sửa nhanh ô, tạo hồ sơ + lệnh in + hộp thoại "đã được tạo và đang in" rồi reset</td>
+</tr>
+<tr>
+<td><code>jobs.js</code>, <code>printer.js</code></td>
+<td>Hàng đợi lệnh in; chế độ "máy này là máy in"</td>
+</tr>
+<tr>
+<td><code>contracts-api.js</code>, <code>contract-list.js</code>, <code>contract-filter.js</code>, <code>contract-detail.js</code>, <code>contract-forms.js</code>, <code>contract-images.js</code></td>
+<td>Tab Hợp đồng: danh sách, lọc, chi tiết, các biểu mẫu thao tác, xem ảnh</td>
+</tr>
+<tr>
+<td><code>report.js</code></td>
+<td>Báo cáo vốn/doanh thu/lợi nhuận</td>
+</tr>
+<tr>
+<td><code>settings.js</code>, <code>auth.js</code>, <code>pin.js</code></td>
+<td>Cài đặt, trạng thái đăng nhập (<code>AU</code>), màn nhập PIN</td>
+</tr>
+</tbody>
+</table></div>
+<p>Quy ước: trạng thái trung tâm là <code>state[k] = {value, status:'ok'|'check'|'missing', note, edited}</code>; <code>refresh()</code> vẽ lại; <code>resetAll()</code> xóa trạng thái, ảnh, vùng cắt và quay về màn quét; hàm gọi API dùng <code>api()</code> (tự gắn tiêu đề <code>X-Session</code>).</p>
+<h2 id="3-xu-ly-quet-giay-to">3. Xử lý quét giấy tờ<a class="a" href="#3-xu-ly-quet-giay-to">#</a></h2>
+<ol>
+<li>Điện thoại/máy tính chụp ảnh (nhiều khung liên tiếp) → <code>POST /api/stack</code> gộp khung nét nhất, căn chỉnh và lấy trung bình để giảm nhiễu/rung tay.</li>
+<li>Khi đang ngắm, <code>POST /api/peek</code> đọc nhanh từng khung để hiện kết quả trực tiếp; <strong>không lưu, không ghi log nội dung</strong>.</li>
+<li>Chốt ảnh → <code>POST /api/scan</code> (CCCD trước/sau, cà vẹt): đọc QR (CCCD, cà vẹt), OCR bằng RapidOCR, phân tích thành trường, kiểm tra chéo bằng <code>validators</code>.</li>
+<li>Cà vẹt đọc <strong>3 lượt</strong> (xử lý ảnh khác nhau + một lượt nền phẳng, nắn nghiêng) rồi <strong>bỏ phiếu từng ô</strong>; đồng thời cắt ảnh nhỏ quanh chữ để người dùng đối chiếu.</li>
+<li>Mỗi trường trả về <code>{value, status, note}</code> với <code>status</code>: <code>ok</code> (Đã đọc), <code>check</code> (Cần soát), <code>missing</code> (Thiếu).</li>
+</ol>
+<p>Mặc định server <strong>không</strong> ghi nội dung đọc được vào log; đặt <code>SCAN_DEBUG=1</code> mới có log chi tiết (có dữ liệu cá nhân — xóa log sau khi dùng).</p>
+<h2 id="4-bao-mat">4. Bảo mật<a class="a" href="#4-bao-mat">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Chủ đề</th>
+<th>Cách làm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phân quyền</td>
+<td>3 mức: mở (quét, kiểm trùng, lập hợp đồng, danh sách lệnh in đã che), <strong>có PIN</strong> (xem/gia hạn/chuộc/thanh lý/ghi chú, xem/sửa/in/hủy/xóa lệnh in), <strong>chỉ máy chủ</strong> (sửa, hủy, mở lại, xóa hẳn, báo cáo tiền, cài đặt, sao lưu, xuất CSV)</td>
+</tr>
+<tr>
+<td>PIN</td>
+<td>4–6 chữ số, băm PBKDF2-SHA256 120.000 vòng + muối ngẫu nhiên; đặt/đổi chỉ làm trên máy chủ và đăng xuất mọi phiên</td>
+</tr>
+<tr>
+<td>Phiên</td>
+<td>Token ngẫu nhiên, hết hạn sau <strong>300 giây không dùng</strong> (mỗi lần gọi API gia hạn)</td>
+</tr>
+<tr>
+<td>Chống dò PIN</td>
+<td>Sai <strong>5</strong> lần liên tiếp → khóa mọi lần thử từ xa <strong>300 giây</strong> (đếm chung)</td>
+</tr>
+<tr>
+<td>ID lệnh in</td>
+<td>Ngẫu nhiên, không đoán được</td>
+</tr>
+<tr>
+<td>Dữ liệu qua tunnel</td>
+<td>Chưa PIN: tên, CCCD, số điện thoại bị ẩn trong cảnh báo; tiền không trả về ở thống kê <code>remote</code></td>
+</tr>
+<tr>
+<td>Xóa hẳn</td>
+<td>Phải gửi đúng mã hợp đồng; tự sao lưu trước</td>
+</tr>
+<tr>
+<td>Ảnh giấy tờ</td>
+<td>Lưu cục bộ, tự xóa sau N ngày khi hợp đồng đóng; <code>.gitignore</code> chặn <code>*.jpg</code>, <code>samples/</code>, <code>uploads/</code>, <code>.env</code></td>
+</tr>
+<tr>
+<td>Cổng</td>
+<td>Server nghe <code>0.0.0.0</code> (để máy khác cùng wifi truy cập); khi chỉ cần tunnel nên đặt tường lửa chặn truy cập LAN nếu mạng không tin cậy</td>
+</tr>
+</tbody>
+</table></div>
+<p>Không có HTTPS nội bộ mặc định (https dùng qua tunnel Cloudflare); <code>make_cert.py</code> hỗ trợ chứng chỉ tự ký cho chế độ <code>--https</code> trong LAN.</p>
+<h2 id="5-danh-sach-api">5. Danh sách API<a class="a" href="#5-danh-sach-api">#</a></h2>
+<p>Quy ước: <strong>Local</strong> = chỉ máy chủ; <strong>PIN</strong> = máy chủ hoặc phiên PIN hợp lệ (tiêu đề <code>X-Session</code>); <strong>Mở</strong> = ai cũng gọi được. Lỗi trả JSON <code>{"detail": "..."}</code> (400 dữ liệu sai, 401 cần PIN, 403 chỉ máy chủ, 404 không có, 429 bị khóa PIN).</p>
+<h3 id="5-1-quet-giay-to-va-tien-ich-app-py">5.1 Quét giấy tờ và tiện ích (<code>app.py</code>)<a class="a" href="#5-1-quet-giay-to-va-tien-ich-app-py">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/scan</code></td>
+<td>Mở</td>
+<td>multipart: <code>cccd_front</code>, <code>cccd_back</code>, <code>cavet</code> → <code>{fields, warnings}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/stack</code></td>
+<td>Mở</td>
+<td>multipart: <code>images[]</code> (≤ 10) → ảnh JPEG đã gộp; tiêu đề <code>X-Stack-Used</code>, <code>X-Stack-N</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/peek</code></td>
+<td>Mở</td>
+<td>form: <code>kind</code> (<code>cavet</code>/<code>cccd_front</code>/<code>cccd_back</code>) + <code>image</code> → kết quả đọc nhanh, không lưu</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/links</code>, <code>/api/qr.png</code></td>
+<td>Mở</td>
+<td>Link truy cập (LAN, tunnel) và mã QR</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/printer</code></td>
+<td>Mở</td>
+<td>Trạng thái máy in của hệ điều hành</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/shutdown</code></td>
+<td>Local</td>
+<td>Dừng server</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/health</code></td>
+<td>Mở</td>
+<td><code>{"ok": true}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/</code></td>
+<td>Mở</td>
+<td>Trang chính</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="5-2-dang-nhap-va-cai-dat-routes-contracts-py">5.2 Đăng nhập và cài đặt (<code>routes_contracts.py</code>)<a class="a" href="#5-2-dang-nhap-va-cai-dat-routes-contracts-py">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/auth/status</code></td>
+<td>Mở</td>
+<td><code>{local, authed, pin_set, locked_for, idle}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/login</code></td>
+<td>Mở</td>
+<td><code>{pin}</code> → <code>{token, idle}</code>; 401 sai PIN, 429 bị khóa</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/logout</code></td>
+<td>Mở</td>
+<td>Hủy phiên</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/pin</code></td>
+<td>Local</td>
+<td><code>{pin}</code> đặt/đổi PIN</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/settings</code></td>
+<td>Mở</td>
+<td>Từ xa: chỉ <code>so_ngay_ky</code>, <code>le_phi_ky</code>. Máy chủ: đầy đủ + <code>pin_set</code>, dung lượng ảnh, thời điểm sao lưu</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/settings</code></td>
+<td>Local</td>
+<td>Lưu cài đặt (có kiểm giới hạn)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="5-3-hop-dong">5.3 Hợp đồng<a class="a" href="#5-3-hop-dong">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/check</code></td>
+<td>Mở</td>
+<td><code>{bks, so_khung, so_may, cccd, ho_ten}</code> → <code>{warnings}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts</code></td>
+<td>Mở</td>
+<td>Lập hợp đồng → <code>{contract, duplicate, warnings}</code>; lập trùng thì <code>duplicate:true</code> và trả hợp đồng cũ</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts</code></td>
+<td>PIN</td>
+<td>Tìm/lọc: <code>q</code>, <code>status</code>, <code>limit</code>, <code>offset</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/stats</code></td>
+<td>PIN</td>
+<td>Số liệu thẻ đầu trang (tiền chỉ trả cho máy chủ)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/report</code></td>
+<td>Local</td>
+<td>Báo cáo, tham số <code>frm</code>, <code>to</code> (ISO)</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/export.csv</code></td>
+<td>Local</td>
+<td>Xuất toàn bộ hợp đồng</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/{id}</code></td>
+<td>PIN</td>
+<td>Chi tiết + lịch sử</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/renew</code></td>
+<td>PIN</td>
+<td><code>{days, fee, note}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/chuoc</code></td>
+<td>PIN</td>
+<td><code>{amount, note}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/thanh_ly</code></td>
+<td>PIN</td>
+<td><code>{amount, note}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/note</code></td>
+<td>PIN</td>
+<td><code>{note}</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/reopen</code></td>
+<td>Local</td>
+<td>Mở lại</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/sua</code></td>
+<td>Local</td>
+<td>Các trường cần sửa (<code>ho_ten</code>, <code>bks</code>, <code>so_tien</code>, <code>le_phi</code>…)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/huy</code></td>
+<td>Local</td>
+<td><code>{reason}</code> bắt buộc</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/xoa</code></td>
+<td>Local</td>
+<td><code>{confirm: "&lt;mã hợp đồng&gt;"}</code> — xóa hẳn, tự sao lưu trước</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/{id}/anh/{kind}</code></td>
+<td>Mở có điều kiện</td>
+<td>Tải ảnh lên (<code>cccd</code>, <code>cavet</code>, ≤ 15MB). Chưa PIN: chỉ được trong 30 phút sau khi lập hợp đồng và khi chưa có ảnh loại đó</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/{id}/anh/{kind}</code></td>
+<td>PIN</td>
+<td>Xem ảnh (không cache)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Các thao tác thay đổi dữ liệu đều kích hoạt sao lưu nền (<code>_backup_soon</code>).</p>
+<h3 id="5-4-sao-luu">5.4 Sao lưu<a class="a" href="#5-4-sao-luu">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/backups</code></td>
+<td>Local</td>
+<td>Danh sách bản sao lưu</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/backup</code></td>
+<td>Local</td>
+<td>Sao lưu ngay</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/contracts/backup/download</code></td>
+<td>Local</td>
+<td>Tải bản sao lưu về máy</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/restore</code></td>
+<td>Local</td>
+<td><code>{name}</code> khôi phục (tự lưu bản hiện tại trước)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/contracts/offsite</code></td>
+<td>Local</td>
+<td>Cấu hình thư mục sao lưu ngoài</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="5-5-lenh-in-routes-jobs-py">5.5 Lệnh in (<code>routes_jobs.py</code>)<a class="a" href="#5-5-lenh-in-routes-jobs-py">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Phương thức</th>
+<th>Đường dẫn</th>
+<th>Quyền</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GET</td>
+<td><code>/api/jobs</code></td>
+<td>Mở (che bớt nếu chưa PIN)</td>
+<td>Danh sách lệnh in</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/jobs</code></td>
+<td>Mở</td>
+<td>Tạo lệnh in (bản chụp dữ liệu) → <code>{id,...}</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/jobs/{id}/snapshot</code></td>
+<td>PIN</td>
+<td>Lấy dữ liệu để in lại</td>
+</tr>
+<tr>
+<td>PATCH</td>
+<td><code>/api/jobs/{id}</code></td>
+<td>PIN</td>
+<td>Đổi trạng thái</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/jobs/{id}/print</code></td>
+<td>PIN</td>
+<td><strong>Server in thẳng</strong> (không hộp thoại)</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/jobs/{id}/cancel</code></td>
+<td>PIN</td>
+<td>Hủy lệnh đang in</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/jobs/{id}/preview.png</code></td>
+<td>PIN</td>
+<td>Ảnh xem trước phiếu</td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/jobs/{id}</code></td>
+<td>PIN</td>
+<td>Xóa lệnh</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="6-in-an">6. In ấn<a class="a" href="#6-in-an">#</a></h2>
+<ul>
+<li><strong>Chế độ <code>driver</code> (mặc định):</strong> <code>layout.py</code> đọc <code>template.json</code> (tọa độ mm trên khổ 148×210 mm) → <code>render.py</code> vẽ ảnh đen/trắng 1-bit 300dpi, <strong>chỉ phần điền vào</strong> (chữ in sẵn của tờ mẫu không in lại) → <code>printing.py</code> gửi qua driver của hệ điều hành. Chạy với mọi máy in có driver.</li>
+<li><strong>Chế độ <code>escp</code>:</strong> gửi lệnh ESC/P2 thẳng tới <code>host:9100</code> cho máy kim có card mạng — <strong>không dấu, chưa thử với máy thật</strong>.</li>
+<li>Cấu hình ở <code>.run/print.json</code>: <code>{"printer": "tên", "mode": "driver|escp", "host": "ip", "port": 9100, "dx": 0, "dy": 0}</code>; <code>dx</code>, <code>dy</code> (mm) dùng chỉnh lệch giấy.</li>
+<li>Máy in mặc định của hệ điều hành được chọn nếu không cấu hình (bỏ qua PDF/OneNote/Fax).</li>
+<li>Hiệu chỉnh: <code>template.json</code> đang ghi <code>"calibrated": false</code> — tọa độ ước lượng từ ảnh chụp nghiêng; phải in thử lên tờ mẫu thật và chỉnh lại.</li>
+</ul>
+<h2 id="7-giao-dien-va-quy-uoc-ui">7. Giao diện và quy ước UI<a class="a" href="#7-giao-dien-va-quy-uoc-ui">#</a></h2>
+<ul>
+<li>Hai bố cục: <strong>điện thoại &lt; 1000px</strong> (thanh tab dưới, bước 1/2 cố định ở đầu, thanh "Tiếp tục" dính đáy) và <strong>máy tính ≥ 1000px</strong> (thanh bên trái).</li>
+<li>Màu: nền <code>#F2F2F7</code>, thẻ trắng, màu chủ đạo <code>#007AFF</code>, xanh = đã đọc, cam = cần soát/cảnh báo, đỏ = thiếu/nguy hiểm.</li>
+<li>Vùng chạm tối thiểu: các nút "?" và nút đóng có vùng chạm mở rộng vô hình (≥ 44px); ô nhập trên điện thoại có cỡ chữ ≥ 16px để iOS không tự phóng to.</li>
+<li>Văn bản giao diện hoàn toàn tiếng Việt.</li>
+<li>CSS dọn sạch khai báo bị ghi đè (đợt 22/11/2026): 93,1KB → 88,4KB, ảnh trước/sau giống hệt.</li>
+</ul>
+<h2 id="8-chay-va-kiem-tra-tu-dong">8. Chạy và kiểm tra tự động<a class="a" href="#8-chay-va-kiem-tra-tu-dong">#</a></h2>
+<p><code>backend/selfcheck.py</code> (gọi bởi <code>scripts/run.*</code> trước mỗi lần khởi động) biên dịch mã, import thử và chạy test; <strong>lỗi thì hoàn tác code và không đụng server đang chạy</strong>, có kiểm tra sức khỏe (<code>/api/health</code>) sau khi khởi động, lỗi thì quay về bản cũ.</p></article><div class="pager"><a href="02_ERD.html"><small>← Trước</small>ERD & dữ liệu</a><a href="04_HUONG_DAN_SU_DUNG.html"><small>Tiếp →</small>Hướng dẫn sử dụng</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

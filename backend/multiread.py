@@ -24,6 +24,16 @@ def norm(v: str) -> str:
     return re.sub(r"[^a-z0-9]", "", _fold(v))
 
 
+def _merge_truncated(groups: dict[str, list[int]]) -> None:
+    """Tên màu hay bị OCR cụt chữ cuối ('Xanh Xám' thay vì 'Xanh Xám Đen'): lượt đọc cụt tính là phiếu ủng hộ cho lượt đọc đầy đủ hơn
+    (OCR hay bỏ chữ cuối, hiếm khi bịa thêm tên màu). Chỉ gộp khi chuỗi ngắn là phần đầu của chuỗi dài."""
+    for short in sorted(groups, key=len):
+        longer = [g for g in groups if len(g) > len(short) and g.startswith(short)]
+        if longer and short in groups:
+            tgt = max(longer, key=lambda g: len(groups[g]))
+            groups[tgt] += groups.pop(short)
+
+
 def vote(outs: list[dict]) -> dict:
     """Gộp kết quả nhiều lượt đọc. Mỗi ô: lấy giá trị nhiều lượt đọc trùng nhất (hoà → độ tin cậy cao hơn).
     Trả thêm `agree`/`of`/`src` (lượt đọc nào cho giá trị thắng). Lượt đọc bất đồng → luôn 'check' kèm giá trị khác."""
@@ -38,6 +48,8 @@ def vote(outs: list[dict]) -> dict:
             v = (o.get(k) or {}).get("value")
             if v:
                 groups[norm(v)].append(i)
+        if k == "mau":
+            _merge_truncated(groups)
         if not groups:
             res[k] = dict(outs[0].get(k) or {"value": "", "status": "missing"})
             continue

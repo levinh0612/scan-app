@@ -1,0 +1,302 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vận hành và cài đặt · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Vận hành và cài đặt</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n on" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><div class="toc"><a href="#1-yeu-cau">1. Yêu cầu</a><a href="#2-cai-dat-lan-dau">2. Cài đặt lần đầu</a><a href="#3-chay-va-dung">3. Chạy và dừng</a><a href="#4-tep-va-thu-muc-can-biet">4. Tệp và thư mục cần biết</a><a href="#5-sao-luu-va-khoi-phuc">5. Sao lưu và khôi phục</a><a href="#6-cau-hinh-in">6. Cấu hình in</a><a href="#7-bao-mat-van-hanh">7. Bảo mật vận hành</a><a href="#8-xu-ly-su-co-ky-thuat">8. Xử lý sự cố (kỹ thuật)</a><a href="#9-cap-nhat-phien-ban">9. Cập nhật phiên bản</a></div><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Tài liệu 05</div><h1>Vận hành và cài đặt</h1><p class="lead">Dành cho người quản trị máy chạy server. Bản cài đặt tóm tắt cũng có ở <a href="../README.md"><code>../README.md</code></a>.</p><div class="meta"><span class="pill">⏱ 8 phút đọc</span><span class="pill">👤 Quản trị máy</span></div></div>
+<article>
+<h2 id="1-yeu-cau">1. Yêu cầu<a class="a" href="#1-yeu-cau">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Hạng mục</th>
+<th>Yêu cầu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Máy chủ</td>
+<td>Máy tính luôn bật ở tiệm (macOS đã thử; Windows 10/11 <strong>chưa thử trên máy thật</strong>); nên đặt IP cố định trong router, tắt chế độ ngủ</td>
+</tr>
+<tr>
+<td>Phần mềm</td>
+<td>Git, Python ≥ 3.10 (script tự cài/kiểm tra), <code>cloudflared</code> (tunnel https, script tự cài trên Windows)</td>
+</tr>
+<tr>
+<td>Mạng</td>
+<td>Internet để dùng link https cho điện thoại (không cần nếu chỉ dùng trên máy chủ)</td>
+</tr>
+<tr>
+<td>Máy in</td>
+<td>Máy in có driver trên máy chủ, khổ A5 (phun/laser/kim); đặt làm máy in mặc định</td>
+</tr>
+<tr>
+<td>Điện thoại</td>
+<td>Trình duyệt hiện đại (Safari iOS / Chrome Android), cấp quyền camera</td>
+</tr>
+<tr>
+<td>Thư viện Python</td>
+<td><code>rapidocr-onnxruntime</code>, <code>opencv-python-headless</code>, <code>fastapi</code>, <code>uvicorn[standard]</code>, <code>python-multipart</code>, <code>pillow</code>, <code>numpy</code>, <code>zxing-cpp</code>, <code>segno</code>, <code>cryptography</code> (<code>backend/requirements.txt</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="2-cai-dat-lan-dau">2. Cài đặt lần đầu<a class="a" href="#2-cai-dat-lan-dau">#</a></h2>
+<ol>
+<li>Lấy mã nguồn: <code>git clone https://github.com/levinh0612/scan-app.git</code></li>
+<li>Bấm đúp <strong>một</strong> file:
+   - macOS: <code>RUN_THIS_FILE_MACOS.command</code> (tạo biểu tượng ScanApp, cần Xcode Command Line Tools)
+   - Windows: <code>RUN_THIS_FILE_WIN.cmd</code> (chọn <strong>Yes</strong> khi hỏi quyền; cài môi trường, <code>cloudflared</code>, mở tường lửa, tạo tác vụ nền <strong>ScanApp</strong> và <strong>ScanApp-Update</strong>)</li>
+<li>Mở biểu tượng <strong>ScanApp</strong> → chờ khi hiện mã QR + link → <strong>Mở app trên máy này</strong>.</li>
+<li><strong>Đặt PIN:</strong> Cài đặt → Mã PIN → nhập 4–6 số → Lưu. Nếu không đặt, điện thoại không xem được hợp đồng.</li>
+<li>Thêm máy in vào hệ điều hành, đặt làm mặc định. In thử một hợp đồng thử, <strong>hiệu chỉnh tọa độ</strong> (§6).</li>
+<li>Cài đặt → <strong>Mặc định khi lập / gia hạn</strong>: số ngày kỳ, lệ phí kỳ; số ngày giữ ảnh.</li>
+<li>Dọn hồ sơ thử bằng <strong>Xóa hẳn hồ sơ</strong> (chỉ máy chủ).</li>
+</ol>
+<h2 id="3-chay-va-dung">3. Chạy và dừng<a class="a" href="#3-chay-va-dung">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Việc</th>
+<th>macOS / Linux</th>
+<th>Windows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cài + cập nhật + chạy</td>
+<td><code>./scripts/run.sh</code></td>
+<td><code>powershell -File scripts\run.ps1</code></td>
+</tr>
+<tr>
+<td>Không kéo code mới</td>
+<td><code>./scripts/run.sh --no-pull</code></td>
+<td><code>… run.ps1 -NoPull</code></td>
+</tr>
+<tr>
+<td>Chế độ tự động (restart khi có code mới)</td>
+<td><code>--auto</code></td>
+<td><code>-Auto</code></td>
+</tr>
+<tr>
+<td>Bật/tắt tunnel https</td>
+<td><code>--tunnel</code> / <code>--no-tunnel</code></td>
+<td><code>-Tunnel</code></td>
+</tr>
+<tr>
+<td>https tự ký trong wifi</td>
+<td><code>--https</code></td>
+<td><code>-Https</code></td>
+</tr>
+<tr>
+<td>Đổi cổng</td>
+<td><code>PORT=9000 ./scripts/run.sh</code></td>
+<td><code>$env:PORT=9000; … run.ps1</code></td>
+</tr>
+<tr>
+<td>Dừng</td>
+<td><code>./scripts/stop.sh</code> (giữ tunnel: <code>--keep-tunnel</code>)</td>
+<td><code>powershell -File scripts\stop.ps1</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Cổng mặc định <strong>8000</strong>; bận thì tự chọn cổng trống kế tiếp (ghi ở <code>.run/port</code>).</p>
+<p><strong>4 bước của <code>run</code>:</strong> (B1) cài tài nguyên → (B2) <code>git pull --ff-only</code> → (B3) kiểm tra: biên dịch, chạy test nếu có, thử <code>import app</code> — <strong>lỗi thì hoàn tác code, không đụng server đang chạy</strong> → (B4) start/restart, chờ <code>/api/health</code> tối đa 30 giây, không lên thì quay về bản cũ.</p>
+<blockquote class="warn"><span class="bt">Lưu ý</span>
+<p>Sau khi <strong>sửa mã backend</strong> phải restart server mới có hiệu lực. Frontend là file tĩnh — chỉ cần tải lại trang (Ctrl/Cmd+R; điện thoại: đóng và mở lại).</p>
+</blockquote>
+<h2 id="4-tep-va-thu-muc-can-biet">4. Tệp và thư mục cần biết<a class="a" href="#4-tep-va-thu-muc-can-biet">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Đường dẫn</th>
+<th>Mục đích</th>
+<th>Sao lưu?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data/contracts.db</code></td>
+<td>CSDL chính</td>
+<td><strong>Có</strong></td>
+</tr>
+<tr>
+<td><code>data/anh/</code></td>
+<td>Ảnh giấy tờ</td>
+<td>Có (nếu muốn giữ)</td>
+</tr>
+<tr>
+<td><code>data/settings.json</code></td>
+<td>Cài đặt + PIN băm</td>
+<td><strong>Có</strong></td>
+</tr>
+<tr>
+<td><code>data/backup/</code></td>
+<td>Bản sao lưu tự động (30 ngày)</td>
+<td>Là bản sao lưu</td>
+</tr>
+<tr>
+<td><code>data/offsite.json</code></td>
+<td>Thư mục sao lưu ngoài</td>
+<td><span class="b ok">Có</span></td>
+</tr>
+<tr>
+<td><code>.run/</code></td>
+<td>pid, cổng, cấu hình in <code>print.json</code></td>
+<td>Chỉ <code>print.json</code></td>
+</tr>
+<tr>
+<td><code>logs/server.log</code>, <code>server.err.log</code>, <code>tunnel.log</code>, <code>launcher.log</code>, <code>install.log</code></td>
+<td>Nhật ký</td>
+<td>Không</td>
+</tr>
+</tbody>
+</table></div>
+<p>Chuyển sang máy mới: cài ScanApp như §2, <strong>dừng server</strong>, chép nguyên <code>data/</code> và <code>.run/print.json</code> sang, chạy lại.</p>
+<h2 id="5-sao-luu-va-khoi-phuc">5. Sao lưu và khôi phục<a class="a" href="#5-sao-luu-va-khoi-phuc">#</a></h2>
+<p><strong>Tự động:</strong> mỗi ngày 1 bản + ngay sau mỗi thay đổi → <code>data/backup/contracts-YYYYMMDD.db</code>, giữ 30 bản. Có thể đặt <strong>thư mục sao lưu ngoài</strong> (USB, Google Drive for desktop, ổ mạng) để mỗi bản được chép thêm sang đó.</p>
+<p><strong>Thủ công:</strong> Cài đặt → Sao lưu tự động → <strong>Sao lưu ngay</strong> / <strong>Tải bản sao lưu về máy</strong>.</p>
+<p><strong>Khôi phục (khi sửa/xóa nhầm):</strong>
+1. Cài đặt → Sao lưu → chọn bản (theo ngày) → <strong>Khôi phục</strong>.
+2. App tự lưu bản hiện tại thành <code>truoc-khoi-phuc-&lt;thời gian&gt;.db</code> (giữ 5 bản) rồi mới ghi đè — có thể quay lại nếu chọn nhầm.
+3. Nếu không vào được giao diện: dừng server, chép file <code>contracts-YYYYMMDD.db</code> đè lên <code>data/contracts.db</code> (xóa <code>contracts.db-wal</code>/<code>-shm</code> nếu có), chạy lại.</p>
+<p><strong>Khuyến nghị:</strong> mỗi tuần tải một bản về USB/Drive; bản trong máy mất cùng máy. Ảnh trong <code>data/anh/</code> <strong>không</strong> được sao lưu tự động.</p>
+<h2 id="6-cau-hinh-in">6. Cấu hình in<a class="a" href="#6-cau-hinh-in">#</a></h2>
+<p>File <code>.run/print.json</code> (tạo khi cần, không có sẵn cũng chạy được):</p>
+<pre><code class="language-json">{&quot;printer&quot;: &quot;Tên máy in&quot;, &quot;mode&quot;: &quot;driver&quot;, &quot;dx&quot;: 0, &quot;dy&quot;: 0}
+</code></pre>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Khóa</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>printer</code></td>
+<td>Tên máy in; bỏ trống = máy in mặc định của OS</td>
+</tr>
+<tr>
+<td><code>mode</code></td>
+<td><code>driver</code> (mặc định, mọi máy in có driver) hoặc <code>escp</code> (máy kim có card mạng)</td>
+</tr>
+<tr>
+<td><code>host</code>, <code>port</code></td>
+<td>Chỉ cho <code>escp</code> (cổng mặc định 9100)</td>
+</tr>
+<tr>
+<td><code>dx</code>, <code>dy</code></td>
+<td>Bù lệch cơ học (mm); thử với số nhỏ rồi in lại để biết chiều dịch</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Hiệu chỉnh tọa độ:</strong> tọa độ nằm ở <code>backend/template.json</code> (mm từ góc trên-trái khổ 148×210; <code>y</code> là đường chữ). Hiện đang đánh dấu <code>"calibrated": false</code> (ước lượng từ ảnh chụp nghiêng). Quy trình:
+1. Đặt tờ giấy mẫu thật vào khay; in hợp đồng thử.
+2. Đo độ lệch từng ô (hoặc dùng <code>dx</code>/<code>dy</code> nếu lệch đều).
+3. Sửa <code>x</code>, <code>y</code>, <code>w</code>, <code>size</code> trong <code>template.json</code>, restart server, in lại tới khi khớp, rồi đặt <code>"calibrated": true</code>.
+4. Xem trước ảnh sẽ in ở <code>/api/jobs/&lt;id&gt;/preview.png</code> (cần PIN nếu qua link công khai).</p>
+<p>Trạng thái in đọc từ hàng đợi thật của OS: Đang in → Đã gửi máy in; hết giấy/mất wifi quá 2 phút → <strong>Lỗi</strong> + lý do, lệnh bị hủy để in lại không bị in đôi.</p>
+<h2 id="7-bao-mat-van-hanh">7. Bảo mật vận hành<a class="a" href="#7-bao-mat-van-hanh">#</a></h2>
+<ul>
+<li>Đặt PIN ngay khi cài; đổi PIN khi nhân viên nghỉ việc (đổi PIN = đăng xuất mọi điện thoại).</li>
+<li>Link tunnel công khai; chỉ chia sẻ cho nhân viên. Link đổi mỗi lần chạy lại.</li>
+<li>Server mặc định nghe mọi giao diện mạng; trong mạng không tin cậy hãy chặn cổng 8000 từ LAN bằng tường lửa nếu chỉ dùng tunnel.</li>
+<li>Không bật <code>SCAN_DEBUG=1</code> trong vận hành thường ngày (ghi chữ gốc có dữ liệu cá nhân); nếu bật để dò lỗi, <strong>xóa log sau khi dùng</strong>.</li>
+<li>Ảnh CCCD là dữ liệu cá nhân (Nghị định 13/2023): giữ ảnh ngắn nhất có thể (Cài đặt → số ngày giữ), mã hóa ổ đĩa máy chủ nếu có thể.</li>
+<li>Không đưa <code>data/</code>, <code>*.jpg</code>, <code>.env</code> lên Git (đã có trong <code>.gitignore</code>).</li>
+</ul>
+<h2 id="8-xu-ly-su-co-ky-thuat">8. Xử lý sự cố (kỹ thuật)<a class="a" href="#8-xu-ly-su-co-ky-thuat">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Triệu chứng</th>
+<th>Nguyên nhân thường gặp</th>
+<th>Cách xử lý</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Điện thoại không mở được link</td>
+<td>Link wifi <code>192.168.x.x</code> bị router chặn; link tunnel cũ</td>
+<td>Dùng link <code>https://….trycloudflare.com</code> mới từ QR</td>
+</tr>
+<tr>
+<td>Camera không bật</td>
+<td>Không phải https; chưa cấp quyền</td>
+<td>Dùng link tunnel; cấp quyền camera cho trình duyệt</td>
+</tr>
+<tr>
+<td>Không có link tunnel</td>
+<td>Thiếu <code>cloudflared</code> / mất internet</td>
+<td>Xem <code>logs/tunnel.log</code>; chạy lại <code>run</code> (server tự bật lại tunnel khi chết trên macOS/Linux)</td>
+</tr>
+<tr>
+<td>Màn PIN báo chưa đặt PIN</td>
+<td>Chưa đặt PIN</td>
+<td>Đặt ở Cài đặt trên máy chủ</td>
+</tr>
+<tr>
+<td>"Chỉ xem/sửa được trên máy chủ" (403)</td>
+<td>Thao tác dành riêng cho máy chủ</td>
+<td>Làm trên máy tính ở tiệm</td>
+</tr>
+<tr>
+<td>401 "Cần nhập mã PIN"</td>
+<td>Phiên hết hạn sau 5 phút</td>
+<td>Nhập PIN lại</td>
+</tr>
+<tr>
+<td>429 "Nhập sai quá nhiều lần"</td>
+<td>Sai PIN 5 lần</td>
+<td>Đợi hết 5 phút</td>
+</tr>
+<tr>
+<td>In không ra giấy</td>
+<td>Hết giấy, máy in offline, không phải máy in mặc định</td>
+<td>Xem trạng thái lệnh trong tab Máy in; kiểm tra hàng đợi in của OS</td>
+</tr>
+<tr>
+<td>Chữ in lệch</td>
+<td>Tọa độ chưa hiệu chỉnh</td>
+<td>Mục 6</td>
+</tr>
+<tr>
+<td>Server không lên sau cập nhật</td>
+<td>Bản mới lỗi</td>
+<td>Script đã quay về bản cũ; xem <code>logs/server.err.log</code></td>
+</tr>
+<tr>
+<td>Lỗi thiếu DLL <code>onnxruntime</code> (Windows)</td>
+<td>Thiếu VC++ runtime</td>
+<td>Chạy lại <code>scripts\run.ps1</code></td>
+</tr>
+<tr>
+<td><code>git pull</code> lỗi đăng nhập</td>
+<td>Repo private</td>
+<td>Chạy <code>git fetch</code> một lần để đăng nhập</td>
+</tr>
+<tr>
+<td>Cổng 8000 bận</td>
+<td>Chương trình khác</td>
+<td>Tự chọn cổng khác — xem <code>.run/port</code></td>
+</tr>
+<tr>
+<td>Mất lệnh in chờ</td>
+<td>Server restart (lệnh nằm trong RAM)</td>
+<td>Mở hợp đồng → <strong>In lại giấy tờ</strong></td>
+</tr>
+<tr>
+<td>Số khung/số loại/màu sơn sai</td>
+<td>OCR hay nhầm (O/0, I/1, B/8)</td>
+<td>Các ô này luôn "Cần soát" — đối chiếu cà vẹt</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="9-cap-nhat-phien-ban">9. Cập nhật phiên bản<a class="a" href="#9-cap-nhat-phien-ban">#</a></h2>
+<ul>
+<li><strong>Windows:</strong> tác vụ <strong>ScanApp-Update</strong> kéo code mới mỗi 30 phút, kiểm tra, restart giữ nguyên link; lỗi thì tự quay về bản cũ; có lệnh in chờ thì hoãn.</li>
+<li><strong>macOS/Linux:</strong> chạy <code>./scripts/run.sh</code> khi muốn cập nhật; hoặc <code>--auto</code> trong tác vụ định kỳ.</li>
+<li>Lược đồ CSDL tự khởi tạo (<code>CREATE … IF NOT EXISTS</code>) mỗi lần kết nối. Cột thêm về sau (<code>ten_k</code>, <code>nguon</code>) được bổ sung bằng kiểm tra <code>PRAGMA table_info</code> + <code>ALTER TABLE ADD COLUMN</code> trong <code>contracts.connect()</code>. <strong>Chưa có hệ thống migration có số phiên bản</strong> — khi thêm cột mới hãy làm theo cùng mẫu đó, và sao lưu trước khi nâng cấp.</li>
+</ul></article><div class="pager"><a href="04_HUONG_DAN_SU_DUNG.html"><small>← Trước</small>Hướng dẫn sử dụng</a><a href="06_KIEM_THU_VA_BAN_GIAO.html"><small>Tiếp →</small>Kiểm thử & bàn giao</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

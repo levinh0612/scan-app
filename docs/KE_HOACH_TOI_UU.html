@@ -1,0 +1,54 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kế hoạch tối ưu (rà soát 22/11/2026) · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Kế hoạch tối ưu (rà soát 22/11/2026)</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n on" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a><div class="toc"><a href="#da-sua-trong-dot-nay">Đã sửa trong đợt này</a><a href="#da-sua-them-dot-2">Đã sửa thêm (đợt 2)</a><a href="#p0-nen-lam-som">P0 – nên làm sớm</a><a href="#p1-chat-luong-code">P1 – chất lượng code</a><a href="#p2-ui-ux">P2 – UI/UX</a><a href="#chua-kiem-tra-duoc">Chưa kiểm tra được</a><a href="#cap-nhat-hoan-tat">Cập nhật: hoàn tất</a></div></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Phụ lục</div><h1>Kế hoạch tối ưu (rà soát 22/11/2026)</h1><div class="meta"><span class="pill">⏱ 3 phút đọc</span></div></div>
+<article><h2 id="da-sua-trong-dot-nay">Đã sửa trong đợt này<a class="a" href="#da-sua-trong-dot-nay">#</a></h2>
+<ul>
+<li>Màn PIN khi chưa đặt PIN: hiện hướng dẫn thay vì nút khóa vĩnh viễn.</li>
+<li>Dấu "!" + tooltip "Xác nhận đã đúng" cho ô Cần soát; địa chỉ camera không ngắt giữa chữ.</li>
+<li>In phiếu (điện thoại): thẻ Tờ 1/Tờ 2 gọn 2 cột, chừa chỗ cho thanh In.</li>
+<li>Vùng chạm nút "?" và nút đóng ≥44px (mở rộng vô hình); chữ tab 11px; favicon (hết lỗi 404); nhãn ô tin nhắn nhắc hạn.</li>
+<li>BẢO MẬT: qua link công khai, snapshot/preview/sửa/in/huỷ/xoá lệnh in nay cần PIN (cần khởi động lại server mới có hiệu lực).</li>
+</ul>
+<h2 id="da-sua-them-dot-2">Đã sửa thêm (đợt 2)<a class="a" href="#da-sua-them-dot-2">#</a></h2>
+<ul>
+<li>ID lệnh in ngẫu nhiên; danh sách lệnh in che bớt biển số/tên khi chưa nhập PIN.</li>
+<li>Báo cáo: "+0 đ" → "0 đ", thêm câu khi chưa có lợi nhuận; ô tìm Hợp đồng 16px; nút bước desktop ≥32px; log lỗi tunnel.</li>
+</ul>
+<h2 id="p0-nen-lam-som">P0 – nên làm sớm<a class="a" href="#p0-nen-lam-som">#</a></h2>
+<ol>
+<li>(Đã xong, chờ khởi động lại server.)</li>
+<li>Đặt PIN trên máy tiệm (hiện "Chưa đặt") – nếu không, điện thoại không xem được hợp đồng.</li>
+<li>Chặn <code>/api/settings</code> (GET) cho người chưa xác thực nếu sau này có thêm khóa cấu hình.</li>
+</ol>
+<h2 id="p1-chat-luong-code">P1 – chất lượng code<a class="a" href="#p1-chat-luong-code">#</a></h2>
+<ol start="4">
+<li>(Đã xong) <code>app.py</code> 1374 → 274 dòng; tách <code>ocr_parse.py</code>, <code>webutil.py</code>, <code>routes_contracts.py</code>, <code>routes_jobs.py</code>.</li>
+<li><code>parse_cavet</code> 86 dòng, <code>parse_cccd</code> 61 dòng: tách theo trường; mỗi hàm ≤40 dòng, thêm test.</li>
+<li>12 chỗ <code>except Exception:</code> nuốt lỗi: ghi log (<code>logging.exception</code>) hoặc bắt lỗi cụ thể.</li>
+<li>(Đã xong phần gộp file: 25 → 5 file, giữ nguyên thứ tự nạp; ảnh trước/sau ở docs/css-truoc, docs/css-sau, khớp từng điểm ảnh. Còn việc dọn quy tắc ghi đè trùng.) CSS xếp chồng nhiều lớp ghi đè (mobile-legacy, apple-ios, mobile-flow, mobile-review…): gộp theo thành phần, bỏ lớp <code>legacy</code>, mục tiêu &lt;8 file.</li>
+<li>Thêm lint tự động (ruff cho Python, <code>node --check</code> + eslint cho JS) vào <code>scripts/</code>.</li>
+</ol>
+<h2 id="p2-ui-ux">P2 – UI/UX<a class="a" href="#p2-ui-ux">#</a></h2>
+<ol start="9">
+<li>Stepper desktop (nút "1 Quét và xác nhận") cao 24px: tăng lên ≥32px.</li>
+<li>Ô tìm kiếm Hợp đồng trên desktop 15px: đặt 16px để thống nhất với iOS.</li>
+<li>Báo cáo: "Thu hồi gốc +0 đ" nên hiện "0 đ"; biểu đồ rỗng nên có câu "Chưa có dữ liệu".</li>
+<li>Thanh In (điện thoại) vẫn nổi che một phần phiếu khi cuộn: cân nhắc dạng gấp gọn.</li>
+<li>Thử thật trên iPhone: camera, PIN, tooltip "!", thanh In, tunnel tự bật lại.</li>
+</ol>
+<h2 id="chua-kiem-tra-duoc">Chưa kiểm tra được<a class="a" href="#chua-kiem-tra-duoc">#</a></h2>
+<ul>
+<li>OCR thật qua camera iPhone, máy in thật, tunnel tự phục hồi, lỗi trên Safari cũ.</li>
+</ul>
+<h2 id="cap-nhat-hoan-tat">Cập nhật: hoàn tất<a class="a" href="#cap-nhat-hoan-tat">#</a></h2>
+<ul>
+<li>Dọn CSS: bỏ 236 khai báo bị khai báo sau ghi đè (93,1KB → 88,4KB). So 31 ảnh trước/sau: giống hệt, trừ 2 điểm góc lệch 1/255.</li>
+<li>Gộp cảnh báo "trùng" + "cần kiểm tra" thành 1 khung, nút ghi rõ mã hợp đồng.</li>
+<li>Nút "Xóa hẳn hồ sơ" (chỉ máy tiệm, phải gõ lại mã), hộp thoại "đã tạo và đang in" rồi về màn quét.</li>
+<li>Chưa thử trên iPhone thật, OCR thật, máy in thật.</li>
+</ul></article><div class="pager"><a href="06_KIEM_THU_VA_BAN_GIAO.html"><small>← Trước</small>Kiểm thử & bàn giao</a><span></span></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

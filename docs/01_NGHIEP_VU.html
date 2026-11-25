@@ -1,0 +1,255 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô tả nghiệp vụ · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Mô tả nghiệp vụ</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n on" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><div class="toc"><a href="#1-boi-canh-va-muc-tieu">1. Bối cảnh và mục tiêu</a><a href="#2-tac-nhan-nguoi-dung">2. Tác nhân (người dùng)</a><a href="#3-quy-trinh-chinh">3. Quy trình chính</a><a href="#4-quy-tac-tinh-tien">4. Quy tắc tính tiền</a><a href="#5-canh-bao-trung-khong-chan-luu">5. Cảnh báo trùng (không chặn lưu)</a><a href="#6-kiem-tra-du-lieu-giay-to">6. Kiểm tra dữ liệu giấy tờ</a><a href="#7-lenh-in">7. Lệnh in</a><a href="#8-du-lieu-ca-nhan-va-luu-giu">8. Dữ liệu cá nhân và lưu giữ</a><a href="#9-cai-dat-nghiep-vu">9. Cài đặt nghiệp vụ</a></div><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Tài liệu 01</div><h1>Mô tả nghiệp vụ</h1><div class="meta"><span class="pill">⏱ 8 phút đọc</span><span class="pill">👤 Chủ tiệm · BA</span></div></div>
+<article><h2 id="1-boi-canh-va-muc-tieu">1. Bối cảnh và mục tiêu<a class="a" href="#1-boi-canh-va-muc-tieu">#</a></h2>
+<p>Tiệm cầm đồ nhận xe máy làm tài sản đảm bảo. Trước đây nhân viên chép tay CCCD của khách và giấy đăng ký xe (cà vẹt) vào hợp đồng giấy mẫu A5. ScanApp thay phần chép tay bằng chụp ảnh + OCR, lưu hồ sơ có hệ thống, cảnh báo xe/khách trùng, nhắc hạn và báo cáo tiền.</p>
+<p><strong>Mục tiêu:</strong> nhập nhanh và đúng, không bỏ sót xe đang cầm, biết vốn đang bỏ ra và lợi nhuận, in đúng vào mẫu giấy có sẵn.</p>
+<p><strong>Ngoài phạm vi:</strong> kế toán đầy đủ, quản lý kho tài sản sau thanh lý, nhiều chi nhánh, nhiều tài khoản người dùng, tính lãi suất tự động.</p>
+<h2 id="2-tac-nhan-nguoi-dung">2. Tác nhân (người dùng)<a class="a" href="#2-tac-nhan-nguoi-dung">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Tác nhân</th>
+<th>Thiết bị</th>
+<th>Quyền</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Chủ/nhân viên tại tiệm</strong></td>
+<td>Máy tính chạy server (truy cập <code>localhost</code>)</td>
+<td>Toàn quyền: lập, xem, gia hạn, chuộc, thanh lý, sửa, hủy, mở lại, xóa hẳn, báo cáo tiền, cài đặt, sao lưu</td>
+</tr>
+<tr>
+<td><strong>Nhân viên đi ngoài / quầy phụ</strong></td>
+<td>Điện thoại qua link https công khai</td>
+<td>Quét giấy tờ, lập hợp đồng, in; <strong>sau khi nhập PIN</strong>: xem danh sách và chi tiết, gia hạn, chuộc, thanh lý, ghi chú. <strong>Không</strong> xem được tiền vốn/báo cáo, không sửa/hủy/mở lại/xóa, không sao lưu/cài đặt</td>
+</tr>
+</tbody>
+</table></div>
+<p>Không có tài khoản riêng từng người: quyền được phân theo <strong>máy</strong> (máy chủ hay không) và <strong>PIN</strong> dùng chung. Server nhận biết "máy chủ" khi yêu cầu đến từ <code>127.0.0.1</code> và không đi qua proxy/tunnel.</p>
+<h2 id="3-quy-trinh-chinh">3. Quy trình chính<a class="a" href="#3-quy-trinh-chinh">#</a></h2>
+<pre><code>Chụp CCCD (mặt sau) + cà vẹt
+        │  OCR 3 lượt + bỏ phiếu, ghép nhiều khung để rõ nét
+        ▼
+Màn &quot;Quét và xác nhận&quot;: rà từng ô (Đã đọc / Cần soát / Thiếu) → nhập sđt, số tiền cầm, lệ phí, số ngày
+        │  kiểm tra trùng xe/khách (cảnh báo, không chặn)
+        ▼
+Bấm &quot;Tiếp tục&quot; → màn &quot;In phiếu&quot;
+        ▼
+Bấm &quot;In&quot;: lưu hợp đồng (HDyymm-nnnn) + tạo lệnh in
+        ▼
+Hộp thoại &quot;Hồ sơ HD… đã được tạo và đang in&quot; → xóa sạch dữ liệu → về màn quét để làm hồ sơ mới
+</code></pre>
+<p>Nếu hồ sơ đã tồn tại (cùng khách + xe + ngày + số tiền — ví dụ bấm 2 lần hoặc in lại) thì <strong>không tạo thêm</strong>, hộp thoại báo "đã có sẵn".</p>
+<h3 id="3-1-lap-hop-dong">3.1 Lập hợp đồng<a class="a" href="#3-1-lap-hop-dong">#</a></h3>
+<ul>
+<li><strong>Bắt buộc có ít nhất một</strong> trong: biển số, số khung, số máy. Thiếu cả ba → từ chối.</li>
+<li>Mã hợp đồng: <code>HD</code> + <code>yyMM</code> + <code>-</code> + số thứ tự 4 chữ số trong tháng, ví dụ <code>HD2611-0001</code>. Đảm bảo duy nhất.</li>
+<li>Ngày bắt đầu (<code>tu_ngay</code>) mặc định hôm nay; <strong>hạn = ngày bắt đầu + số ngày</strong>. Số ngày và lệ phí mặc định lấy từ Cài đặt, sửa được từng hợp đồng.</li>
+<li>Nguồn tạo ghi nhận <code>may_tinh</code> hoặc <code>dien_thoai</code>.</li>
+<li>Mỗi lần thay đổi quan trọng ghi một dòng <strong>sự kiện</strong> (lịch sử) kèm thời điểm.</li>
+</ul>
+<h3 id="3-2-trang-thai-hop-dong">3.2 Trạng thái hợp đồng<a class="a" href="#3-2-trang-thai-hop-dong">#</a></h3>
+<pre><code>                 gia hạn (lặp lại được)
+                  ┌────────┐
+                  ▼        │
+ [Lập] ─────▶ ĐANG CẦM ───┘
+                │   │   │
+        chuộc   │   │   │ thanh lý
+                ▼   │   ▼
+           ĐÃ CHUỘC │  THANH LÝ
+                │   │   │
+                └───┼───┘── &quot;Mở lại&quot; → về ĐANG CẦM
+                    │ hủy (nhập nhầm, cần lý do)
+                    ▼
+                  ĐÃ HỦY  (không mở lại được)
+</code></pre>
+<p>Giá trị lưu trong cột <code>status</code>: <code>dang_cam</code>, <code>da_chuoc</code>, <code>thanh_ly</code>, <code>huy</code>.</p>
+<p><strong>Trạng thái hiển thị</strong> (tính theo ngày, không lưu): <code>dang_cam</code> còn hạn → "Đang cầm"; còn ≤ 3 ngày → "Sắp đến hạn"; qua hạn → "Quá hạn"; các trạng thái còn lại giữ nguyên.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Thao tác</th>
+<th>Điều kiện</th>
+<th>Kết quả</th>
+<th>Ai làm được</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gia hạn</td>
+<td>Đang cầm; số ngày 1–3650</td>
+<td>Hạn mới = (ngày lớn hơn giữa hạn cũ và hôm nay) + số ngày; ghi phí gia hạn; gốc không đổi</td>
+<td>Máy tiệm; điện thoại có PIN</td>
+</tr>
+<tr>
+<td>Chuộc</td>
+<td>Đang cầm</td>
+<td>Trạng thái → Đã chuộc; lưu số tiền khách trả</td>
+<td>Máy tiệm; điện thoại có PIN</td>
+</tr>
+<tr>
+<td>Thanh lý</td>
+<td>Đang cầm</td>
+<td>Trạng thái → Thanh lý; lưu giá bán</td>
+<td>Máy tiệm; điện thoại có PIN</td>
+</tr>
+<tr>
+<td>Ghi chú</td>
+<td>Mọi hợp đồng</td>
+<td>Ghi đè ghi chú (tối đa 500 ký tự)</td>
+<td>Máy tiệm; điện thoại có PIN</td>
+</tr>
+<tr>
+<td>Mở lại</td>
+<td>Đã chuộc hoặc thanh lý (không phải hủy)</td>
+<td>Về Đang cầm, bỏ khoản chuộc/thanh lý khỏi báo cáo</td>
+<td>Chỉ máy tiệm</td>
+</tr>
+<tr>
+<td>Sửa thông tin</td>
+<td>Mọi hợp đồng</td>
+<td>Đổi khách, xe, gốc, lệ phí...; ghi lịch sử giá trị cũ → mới</td>
+<td>Chỉ máy tiệm</td>
+</tr>
+<tr>
+<td>Hủy</td>
+<td>Giao diện chỉ hiện nút khi đang cầm (backend cho hủy mọi trạng thái trừ đã hủy); <strong>bắt buộc lý do</strong></td>
+<td>Trạng thái → Đã hủy; loại khỏi danh sách, báo cáo, cảnh báo trùng</td>
+<td>Chỉ máy tiệm</td>
+</tr>
+<tr>
+<td><strong>Xóa hẳn</strong> (thử nghiệm)</td>
+<td>Phải gõ lại đúng mã hợp đồng</td>
+<td>Xóa vĩnh viễn hợp đồng, lịch sử, ảnh; tự sao lưu database trước</td>
+<td>Chỉ máy tiệm</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote class=""><span class="bt">Ghi chú</span>
+<p>"Hủy" giữ vết trong database; "Xóa hẳn" thì mất hẳn. Xóa hẳn chỉ dùng để dọn dữ liệu thử.</p>
+</blockquote>
+<h2 id="4-quy-tac-tinh-tien">4. Quy tắc tính tiền<a class="a" href="#4-quy-tac-tinh-tien">#</a></h2>
+<p>Theo mẫu hợp đồng giấy của tiệm. Con số nào cũng <strong>loại hợp đồng đã hủy</strong>. Chuộc/thanh lý tính theo <strong>trạng thái hiện tại</strong> của hợp đồng, nên "Mở lại" tự động bỏ khoản đó khỏi báo cáo.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Chỉ số</th>
+<th>Công thức</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vốn đang bỏ ra</strong></td>
+<td>Tổng tiền gốc (<code>so_tien</code>) của hợp đồng <strong>đang cầm</strong> hiện tại (không phụ thuộc kỳ báo cáo)</td>
+</tr>
+<tr>
+<td><strong>Doanh thu</strong> (kỳ)</td>
+<td>Lệ phí lúc lập (theo ngày lập) + phí gia hạn (theo ngày thu) + phần khách trả <strong>vượt gốc</strong> khi chuộc (theo ngày chuộc)</td>
+</tr>
+<tr>
+<td><strong>Thu hồi gốc</strong></td>
+<td>Khách chuộc trả lại tiền gốc → vốn quay về, <strong>không phải doanh thu</strong></td>
+</tr>
+<tr>
+<td><strong>Lãi/lỗ thanh lý</strong></td>
+<td>Giá bán − tiền gốc (theo ngày thanh lý). Giá bán 0/trống = chưa tính (báo "chưa có giá")</td>
+</tr>
+<tr>
+<td><strong>Lợi nhuận</strong> (kỳ)</td>
+<td>Doanh thu + lãi/lỗ thanh lý</td>
+</tr>
+<tr>
+<td><strong>Tỷ suất</strong></td>
+<td>Lợi nhuận kỳ ÷ vốn đang bỏ ra hiện tại (chỉ tham khảo)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Chuộc: nhập <strong>tổng tiền khách trả</strong> (mặc định = gốc). Hệ thống ghi chú khách chuộc <strong>sớm hạn / đúng hạn / trễ hạn</strong> để đối chiếu, <strong>không tự thu thêm phí</strong>.</p>
+<p>Ví dụ: cầm 5.000.000 đ, lệ phí lúc lập 100.000 đ; gia hạn 1 lần thu 100.000 đ; khách chuộc trả 5.300.000 đ.
+Doanh thu = 100.000 + 100.000 + (5.300.000 − 5.000.000) = <strong>500.000 đ</strong>; thu hồi gốc 5.000.000 đ.</p>
+<p>Báo cáo mặc định là tháng hiện tại; chọn khoảng ngày tùy ý; kèm biểu đồ lợi nhuận 6 tháng gần nhất.</p>
+<h2 id="5-canh-bao-trung-khong-chan-luu">5. Cảnh báo trùng (không chặn lưu)<a class="a" href="#5-canh-bao-trung-khong-chan-luu">#</a></h2>
+<p>So sánh với mọi hợp đồng chưa hủy, dựa trên giá trị đã chuẩn hóa (bỏ dấu cách, ký tự lạ, chữ hoa):</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Mức</th>
+<th>Tình huống</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cao</strong> (cam, "Xe này đã có trong hệ thống")</td>
+<td>Trùng số khung / số máy / biển số với xe <strong>đang cầm</strong>; hoặc số khung/số máy khác đúng 1 ký tự (≥ 8 ký tự) so với xe đang cầm</td>
+</tr>
+<tr>
+<td><strong>Cần kiểm tra</strong></td>
+<td>Số khung/số máy gần giống xe đã đóng; cùng biển số nhưng khác số khung (hoặc ngược lại); CCCD trùng nhưng họ tên khác</td>
+</tr>
+<tr>
+<td><strong>Thông tin</strong> (xanh)</td>
+<td>Xe từng cầm (đã chuộc/thanh lý); khách đang có hợp đồng khác chưa chuộc</td>
+</tr>
+</tbody>
+</table></div>
+<p>Mục đích: bắt OCR đọc sai, nhập nhầm, hoặc giấy tờ giả. Cảnh báo "Cao" và "Cần kiểm tra" hiện chung một khung kèm nút "Xem HDxxxx" để mở hợp đồng cũ (chỉ khi đã đủ quyền).</p>
+<h2 id="6-kiem-tra-du-lieu-giay-to">6. Kiểm tra dữ liệu giấy tờ<a class="a" href="#6-kiem-tra-du-lieu-giay-to">#</a></h2>
+<p><code>backend/validators.py</code> chuẩn hóa và kiểm tra chéo: CCCD (đối chiếu số với năm sinh/giới tính khi có), biển số (chuẩn hóa + kiểm dạng), sửa ký tự dễ nhầm ở số khung, đọc mã QR trên CCCD, ngày/hạn, đọc số tiền thành chữ. Ô nào máy không chắc được đánh dấu <strong>Cần soát</strong> (dấu "!"); người dùng bấm vào đối chiếu ảnh rồi chọn <strong>"Xác nhận đã đúng"</strong>. Ô không đọc được là <strong>Thiếu</strong> — phải tự nhập mới in được.</p>
+<h2 id="7-lenh-in">7. Lệnh in<a class="a" href="#7-lenh-in">#</a></h2>
+<ul>
+<li>Lệnh in là bản chụp dữ liệu hồ sơ (snapshot) trong <strong>RAM</strong> (tối đa 30 lệnh, tự xóa sau 12 giờ, mất khi restart).</li>
+<li>Trạng thái: <code>cho_in</code> → <code>dang_in</code> → <code>da_gui</code> (đã gửi máy in) / <code>da_ra_giay</code> / <code>loi</code> (kèm lý do).</li>
+<li>Máy tính ở tiệm là "máy in": in thẳng từ máy chủ, không hộp thoại. Điện thoại tạo lệnh, máy tiệm nhận và in. Có thể hủy lệnh, in lại.</li>
+<li>Trạng thái "đã gửi máy in" chỉ nghĩa là hệ điều hành đã nhận lệnh — <strong>không biết hết giấy, hết mực hay kẹt giấy</strong>.</li>
+</ul>
+<h2 id="8-du-lieu-ca-nhan-va-luu-giu">8. Dữ liệu cá nhân và lưu giữ<a class="a" href="#8-du-lieu-ca-nhan-va-luu-giu">#</a></h2>
+<ul>
+<li>Ảnh CCCD (mặt sau) và cà vẹt lưu thành file trong <code>data/anh/&lt;mã hợp đồng&gt;/</code> (nén JPEG, cạnh dài ≤ 1280 px), không nhét vào database.</li>
+<li>Hợp đồng <strong>đã chuộc/thanh lý/hủy</strong>: ảnh tự xóa sau N ngày (Cài đặt, mặc định <strong>90</strong>, từ 7 đến 3650).</li>
+<li>Điện thoại chưa nhập PIN: tên, CCCD, số điện thoại bị ẩn trong cảnh báo và danh sách lệnh in.</li>
+<li>Sao lưu tự động 1 bản/ngày, giữ 30 bản; có thể chép thêm ra thư mục ngoài (USB, Google Drive đồng bộ).</li>
+</ul>
+<h2 id="9-cai-dat-nghiep-vu">9. Cài đặt nghiệp vụ<a class="a" href="#9-cai-dat-nghiep-vu">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Khóa</th>
+<th>Ý nghĩa</th>
+<th>Mặc định</th>
+<th>Giới hạn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>so_ngay_ky</code></td>
+<td>Số ngày mỗi kỳ (điền sẵn khi lập và gia hạn)</td>
+<td>30</td>
+<td>1–365</td>
+</tr>
+<tr>
+<td><code>le_phi_ky</code></td>
+<td>Lệ phí mỗi kỳ (điền sẵn)</td>
+<td>0</td>
+<td>0–1.000.000.000</td>
+</tr>
+<tr>
+<td><code>anh_giu_ngay</code></td>
+<td>Số ngày giữ ảnh sau khi hợp đồng đóng</td>
+<td>90</td>
+<td>7–3650</td>
+</tr>
+<tr>
+<td>PIN</td>
+<td>4–6 chữ số, lưu dạng băm PBKDF2</td>
+<td>chưa đặt</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div></article><div class="pager"><a href="index.html"><small>← Trước</small>Tổng quan</a><a href="02_ERD.html"><small>Tiếp →</small>ERD & dữ liệu</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

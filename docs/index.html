@@ -1,0 +1,59 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ScanApp — Bộ tài liệu bàn giao · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>ScanApp — Bộ tài liệu bàn giao</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n on" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Hồ sơ bàn giao dự án</div><h1>ScanApp — Bộ tài liệu bàn giao</h1><p class="lead">Ứng dụng web nội bộ cho tiệm cầm đồ: chụp CCCD + cà vẹt xe → máy tự đọc chữ (OCR) → lập hợp đồng cầm → in thẳng lên mẫu A5 → theo dõi gia hạn / chuộc / thanh lý và báo cáo vốn, doanh thu, lợi nhuận.</p><div class="meta"><span class="pill">Python · FastAPI · SQLite</span><span class="pill">Vanilla JS · iOS style</span><span class="pill">macOS · Windows</span></div></div>
+<div class="kpis"><div class="kpi"><b>81</b><span>kiểm tra backend đạt, 0 hỏng</span></div><div class="kpi"><b>0</b><span>lỗi JavaScript ở mọi màn hình</span></div><div class="kpi"><b>7</b><span>tài liệu bàn giao</span></div><div class="kpi"><b>2</b><span>chế độ: điện thoại và máy tính</span></div></div><div class="sec">Bộ tài liệu</div><div class="cards"><a class="card" href="01_NGHIEP_VU.html"><div class="no">1</div><h3>Mô tả nghiệp vụ</h3><p>Quy trình, trạng thái hợp đồng, công thức tiền, cảnh báo trùng, phân quyền</p><span class="who">Chủ tiệm, BA, người tiếp quản</span></a><a class="card" href="02_ERD.html"><div class="no">2</div><h3>Mô hình dữ liệu (ERD)</h3><p>Sơ đồ dữ liệu (ERD), từ điển cột, chỉ mục, thư mục dữ liệu, sao lưu</p><span class="who">Dev, DBA</span></a><a class="card" href="03_KIEN_TRUC_VA_API.html"><div class="no">3</div><h3>Kiến trúc và API</h3><p>Kiến trúc, luồng xử lý, danh sách API, bảo mật, cấu trúc mã nguồn</p><span class="who">Dev</span></a><a class="card" href="04_HUONG_DAN_SU_DUNG.html"><div class="no">4</div><h3>Hướng dẫn sử dụng</h3><p>Dùng hằng ngày trên điện thoại và máy tính</p><span class="who">Nhân viên, chủ tiệm</span></a><a class="card" href="05_VAN_HANH_CAI_DAT.html"><div class="no">5</div><h3>Vận hành và cài đặt</h3><p>Cài đặt, chạy/dừng, PIN, sao lưu/khôi phục, xử lý sự cố</p><span class="who">Người quản trị máy</span></a><a class="card" href="06_KIEM_THU_VA_BAN_GIAO.html"><div class="no">6</div><h3>Kiểm thử và biên bản bàn giao</h3><p>Kiểm thử đã làm, chưa làm, giới hạn đã biết, checklist nghiệm thu</p><span class="who">Tất cả</span></a><a class="card" href="KE_HOACH_TOI_UU.html"><div class="no">★</div><h3>Kế hoạch rà soát &amp; tối ưu</h3><p>Hồ sơ rà soát mã nguồn, các việc đã tối ưu và việc còn lại.</p><span class="who">Dev</span></a></div><div class="sec">Những điều cần biết</div><article><h2 id="tom-tat-ky-thuat">Tóm tắt kỹ thuật<a class="a" href="#tom-tat-ky-thuat">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Mục</th>
+<th>Giá trị</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend</td>
+<td>Python 3.10+, FastAPI + Uvicorn, SQLite (file <code>data/contracts.db</code>)</td>
+</tr>
+<tr>
+<td>OCR / ảnh</td>
+<td>RapidOCR (onnxruntime), OpenCV, Pillow, zxing-cpp (đọc mã vạch/QR)</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>HTML + CSS + JavaScript thuần (không framework, không bước build)</td>
+</tr>
+<tr>
+<td>Giao diện</td>
+<td>Phong cách iOS (màu chủ đạo <code>#007AFF</code>), 2 chế độ: điện thoại (&lt;1000px, thanh tab dưới) và máy tính (≥1000px, thanh bên)</td>
+</tr>
+<tr>
+<td>Kết nối điện thoại</td>
+<td>Tunnel Cloudflare (https, để dùng được camera); điện thoại phải nhập PIN</td>
+</tr>
+<tr>
+<td>In</td>
+<td>Máy chủ vẽ ảnh A5 300dpi rồi in qua driver hệ điều hành (hoặc ESC/P2 qua mạng, chưa thử máy thật)</td>
+</tr>
+<tr>
+<td>Hệ điều hành</td>
+<td>macOS, Windows (Linux chạy được theo script <code>.sh</code>)</td>
+</tr>
+<tr>
+<td>Dữ liệu cá nhân</td>
+<td>Ảnh CCCD/cà vẹt lưu file cục bộ, tự xóa sau N ngày khi hợp đồng đóng; không đưa lên Git</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="diem-can-biet-ngay-nguoi-moi-tiep-quan">Điểm cần biết ngay (người mới tiếp quản)<a class="a" href="#diem-can-biet-ngay-nguoi-moi-tiep-quan">#</a></h2>
+<ol>
+<li><strong>Mọi dữ liệu nằm trong thư mục <code>data/</code></strong> (<code>contracts.db</code>, <code>anh/</code>, <code>backup/</code>, <code>settings.json</code>). Sao lưu thư mục này là đủ. Thư mục này không nằm trong Git.</li>
+<li><strong>Điện thoại chỉ thấy hợp đồng khi đã nhập PIN.</strong> Chưa đặt PIN thì điện thoại không xem được gì — đặt PIN ở Cài đặt trên máy tính của tiệm.</li>
+<li><strong>Việc nhạy cảm (sửa, hủy, mở lại, xóa hẳn, báo cáo tiền, sao lưu) chỉ làm được trên chính máy chạy server</strong>, không làm được qua link công khai.</li>
+<li><strong>Lệnh in nằm trong RAM</strong>, mất khi khởi động lại server (hợp đồng thì đã lưu trong database).</li>
+<li><strong>Tọa độ mẫu in <code>backend/template.json</code> là ước lượng</strong> (<code>"calibrated": false</code>) — cần đo lại với tờ giấy mẫu thật khi in chính thức.</li>
+</ol></article><div class="pager"><span></span><a href="01_NGHIEP_VU.html"><small>Tiếp →</small>Nghiệp vụ</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

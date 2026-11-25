@@ -1,0 +1,307 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mô hình dữ liệu (ERD) · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Mô hình dữ liệu (ERD)</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n on" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><div class="toc"><a href="#1-so-do">1. Sơ đồ</a><a href="#2-tu-dien-du-lieu">2. Từ điển dữ liệu</a><a href="#3-du-lieu-ngoai-sqlite">3. Dữ liệu ngoài SQLite</a><a href="#4-lenh-in-ram">4. Lệnh in (RAM)</a><a href="#5-truy-van-tieu-bieu-de-kiem-tra-nhanh-bang-sqlite3">5. Truy vấn tiêu biểu (để kiểm tra nhanh bằng <code>sqlite3</code>)</a></div><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Tài liệu 02</div><h1>Mô hình dữ liệu (ERD)</h1><p class="lead">CSDL: <strong>SQLite</strong>, file <code>data/contracts.db</code> (bật chế độ WAL nên có thêm file <code>contracts.db-wal</code>/<code>-shm</code> khi chạy — bình thường; mọi truy cập qua <code>backend/contracts.py</code>, có khóa luồng <code>_lock</code>). Lược đồ (<code>SCHEMA</code>) tự tạo khi server khởi động — không cần chạy migration thủ công.</p><div class="meta"><span class="pill">⏱ 6 phút đọc</span><span class="pill">👤 Dev · DBA</span></div></div>
+<article>
+<h2 id="1-so-do">1. Sơ đồ<a class="a" href="#1-so-do">#</a></h2>
+<div class="erd"><div class="ent"><h4>CONTRACTS</h4><ul><li><span class="ty">INTEGER</span><b>id</b><i class="k PK">PK</i></li><li><span class="ty">TEXT</span><b>ma</b><i class="k UK">UK</i><small>HDyymm-nnnn</small></li><li><span class="ty">TEXT</span><b>created_at</b><small>ISO giây</small></li><li><span class="ty">TEXT</span><b>status</b><small>dang_cam|da_chuoc|thanh_ly|huy</small></li><li><span class="ty">TEXT</span><b>ho_ten</b></li><li><span class="ty">TEXT</span><b>cccd</b></li><li><span class="ty">TEXT</span><b>ngay_cap</b></li><li><span class="ty">TEXT</span><b>dia_chi</b></li><li><span class="ty">TEXT</span><b>sdt</b></li><li><span class="ty">TEXT</span><b>bks</b></li><li><span class="ty">TEXT</span><b>nhan_hieu</b></li><li><span class="ty">TEXT</span><b>so_loai</b></li><li><span class="ty">TEXT</span><b>so_khung</b></li><li><span class="ty">TEXT</span><b>so_may</b></li><li><span class="ty">TEXT</span><b>mau</b></li><li><span class="ty">INTEGER</span><b>so_tien</b><small>tiền gốc (đồng)</small></li><li><span class="ty">INTEGER</span><b>le_phi</b><small>lệ phí thỏa thuận</small></li><li><span class="ty">INTEGER</span><b>so_ngay</b><small>tổng số ngày cầm</small></li><li><span class="ty">TEXT</span><b>tu_ngay</b><small>ISO yyyy-mm-dd</small></li><li><span class="ty">TEXT</span><b>den_ngay</b><small>ISO yyyy-mm-dd (hạn)</small></li><li><span class="ty">TEXT</span><b>bks_k</b><small>khóa so sánh (đã chuẩn hóa)</small></li><li><span class="ty">TEXT</span><b>khung_k</b></li><li><span class="ty">TEXT</span><b>may_k</b></li><li><span class="ty">TEXT</span><b>cccd_k</b></li><li><span class="ty">TEXT</span><b>ten_k</b></li><li><span class="ty">TEXT</span><b>dedupe</b><i class="k UK">UK</i><small>chống tạo trùng</small></li><li><span class="ty">TEXT</span><b>closed_at</b><small>lúc chuộc/thanh lý/hủy</small></li><li><span class="ty">INTEGER</span><b>closed_amount</b><small>tiền khách trả / giá bán</small></li><li><span class="ty">TEXT</span><b>note</b></li><li><span class="ty">TEXT</span><b>nguon</b><small>may_tinh|dien_thoai</small></li></ul></div><div class="ent"><h4>EVENTS</h4><ul><li><span class="ty">INTEGER</span><b>id</b><i class="k PK">PK</i></li><li><span class="ty">INTEGER</span><b>contract_id</b><i class="k FK">FK</i></li><li><span class="ty">TEXT</span><b>at</b><small>ISO giây</small></li><li><span class="ty">TEXT</span><b>type</b><small>tao|gia_han|chuoc|thanh_ly|mo_lai|sua|huy</small></li><li><span class="ty">INTEGER</span><b>days</b></li><li><span class="ty">INTEGER</span><b>amount</b></li><li><span class="ty">TEXT</span><b>den_ngay</b><small>hạn mới sau sự kiện</small></li><li><span class="ty">TEXT</span><b>note</b></li></ul></div><div class="ent"><h4>ANH_FILE</h4><ul><li><span class="ty">TEXT</span><b>duong_dan</b><small>data/anh/ma-hop-dong/cccd-sau.jpg | ca-vet.jpg</small></li></ul></div></div><div class="rels"><div class="rel"><b>CONTRACTS</b><span class="ln">1 ─── nhiều</span><b>EVENTS</b><em>có lịch sử</em></div><div class="rel"><b>CONTRACTS</b><span class="ln">1 ─── nhiều</span><b>ANH_FILE</b><em>có ảnh (file, không nằm trong DB)</em></div></div>
+<p>Hai thực thể <strong>không</strong> nằm trong SQLite:</p>
+<ul>
+<li><strong>Lệnh in (Job)</strong> — chỉ trong RAM (xem §4).</li>
+<li><strong>Ảnh giấy tờ</strong> — file trên đĩa theo mã hợp đồng.</li>
+</ul>
+<h2 id="2-tu-dien-du-lieu">2. Từ điển dữ liệu<a class="a" href="#2-tu-dien-du-lieu">#</a></h2>
+<h3 id="2-1-bang-contracts">2.1 Bảng <code>contracts</code><a class="a" href="#2-1-bang-contracts">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ràng buộc</th>
+<th>Ý nghĩa / quy tắc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>INTEGER</td>
+<td>PK, tự tăng</td>
+<td>Khóa nội bộ, dùng trong URL API</td>
+</tr>
+<tr>
+<td><code>ma</code></td>
+<td>TEXT</td>
+<td>UNIQUE</td>
+<td>Mã hiển thị <code>HD</code> + <code>yyMM</code> + <code>-</code> + số thứ tự 4 chữ số của tháng</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TEXT</td>
+<td>NOT NULL</td>
+<td>Thời điểm lập, ISO <code>YYYY-MM-DDTHH:MM:SS</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>TEXT</td>
+<td>NOT NULL, mặc định <code>dang_cam</code></td>
+<td><code>dang_cam</code>, <code>da_chuoc</code>, <code>thanh_ly</code>, <code>huy</code></td>
+</tr>
+<tr>
+<td><code>ho_ten</code>, <code>cccd</code>, <code>ngay_cap</code>, <code>dia_chi</code>, <code>sdt</code></td>
+<td>TEXT</td>
+<td>—</td>
+<td>Thông tin khách (cắt tối đa 300 ký tự). <code>ngay_cap</code> dạng <code>dd/mm/yyyy</code></td>
+</tr>
+<tr>
+<td><code>bks</code>, <code>nhan_hieu</code>, <code>so_loai</code>, <code>so_khung</code>, <code>so_may</code>, <code>mau</code></td>
+<td>TEXT</td>
+<td>—</td>
+<td>Thông tin xe (cắt tối đa 300 ký tự)</td>
+</tr>
+<tr>
+<td><code>so_tien</code></td>
+<td>INTEGER</td>
+<td>mặc định 0</td>
+<td>Tiền gốc (đồng, số nguyên)</td>
+</tr>
+<tr>
+<td><code>le_phi</code></td>
+<td>INTEGER</td>
+<td>mặc định 0</td>
+<td>Lệ phí thỏa thuận lúc lập</td>
+</tr>
+<tr>
+<td><code>so_ngay</code></td>
+<td>INTEGER</td>
+<td>mặc định 0</td>
+<td>Tổng số ngày cầm (cộng dồn khi gia hạn)</td>
+</tr>
+<tr>
+<td><code>tu_ngay</code></td>
+<td>TEXT</td>
+<td>—</td>
+<td>Ngày bắt đầu, ISO</td>
+</tr>
+<tr>
+<td><code>den_ngay</code></td>
+<td>TEXT</td>
+<td>—</td>
+<td>Hạn hiện tại, ISO; đổi khi gia hạn</td>
+</tr>
+<tr>
+<td><code>bks_k</code>, <code>khung_k</code>, <code>may_k</code>, <code>cccd_k</code>, <code>ten_k</code></td>
+<td>TEXT</td>
+<td>có chỉ mục (trừ <code>ten_k</code>)</td>
+<td>Bản chuẩn hóa (bỏ ký tự lạ, chữ hoa) của trường tương ứng, dùng so sánh trùng. <strong>Không sửa tay</strong> — sinh tự động khi lập/sửa</td>
+</tr>
+<tr>
+<td><code>dedupe</code></td>
+<td>TEXT</td>
+<td>UNIQUE</td>
+<td><code>cccd_k\|bks_k\|khung_k\|tu_ngay\|so_tien</code>; chặn tạo trùng khi bấm 2 lần. Hợp đồng hủy đổi thành <code>huy:&lt;id&gt;</code> để giải phóng khóa</td>
+</tr>
+<tr>
+<td><code>closed_at</code></td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>Thời điểm chuộc/thanh lý/hủy; NULL khi đang cầm</td>
+</tr>
+<tr>
+<td><code>closed_amount</code></td>
+<td>INTEGER</td>
+<td>NULL</td>
+<td>Chuộc: tổng tiền khách trả. Thanh lý: giá bán. NULL/0 = chưa nhập</td>
+</tr>
+<tr>
+<td><code>note</code></td>
+<td>TEXT</td>
+<td>mặc định <code>''</code></td>
+<td>Ghi chú (tối đa 500 ký tự)</td>
+</tr>
+<tr>
+<td><code>nguon</code></td>
+<td>TEXT</td>
+<td>NOT NULL, mặc định <code>may_tinh</code></td>
+<td>Nơi lập: <code>may_tinh</code> hoặc <code>dien_thoai</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Chỉ mục:</strong> <code>ix_c_bks(bks_k)</code>, <code>ix_c_khung(khung_k)</code>, <code>ix_c_may(may_k)</code>, <code>ix_c_cccd(cccd_k)</code>, <code>ix_c_status(status, den_ngay)</code>, <code>ux_c_dedupe(dedupe)</code> UNIQUE.</p>
+<h3 id="2-2-bang-events-lich-su-chi-them">2.2 Bảng <code>events</code> (lịch sử, chỉ thêm)<a class="a" href="#2-2-bang-events-lich-su-chi-them">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Cột</th>
+<th>Kiểu</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>INTEGER PK</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>contract_id</code></td>
+<td>INTEGER NOT NULL FK → <code>contracts.id</code></td>
+<td>Chỉ mục <code>ix_e_c</code></td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td>TEXT NOT NULL</td>
+<td>Thời điểm, ISO</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>TEXT NOT NULL</td>
+<td>Loại sự kiện (bảng dưới)</td>
+</tr>
+<tr>
+<td><code>days</code></td>
+<td>INTEGER</td>
+<td>Số ngày (tạo, gia hạn)</td>
+</tr>
+<tr>
+<td><code>amount</code></td>
+<td>INTEGER</td>
+<td>Số tiền (gốc lúc tạo; phí gia hạn; tiền chuộc; giá bán)</td>
+</tr>
+<tr>
+<td><code>den_ngay</code></td>
+<td>TEXT</td>
+<td>Hạn sau sự kiện (tạo, gia hạn)</td>
+</tr>
+<tr>
+<td><code>note</code></td>
+<td>TEXT</td>
+<td>Ghi chú; với <code>sua</code> là danh sách <code>trường: cũ → mới</code>; với <code>huy</code> là lý do</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table>
+<thead>
+<tr>
+<th><code>type</code></th>
+<th>Phát sinh khi</th>
+<th>Ảnh hưởng báo cáo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tao</code></td>
+<td>Lập hợp đồng</td>
+<td>— (lệ phí lúc lập lấy từ <code>contracts.le_phi</code> theo <code>created_at</code>)</td>
+</tr>
+<tr>
+<td><code>gia_han</code></td>
+<td>Gia hạn</td>
+<td>Cộng <code>amount</code> vào doanh thu theo ngày <code>at</code></td>
+</tr>
+<tr>
+<td><code>chuoc</code>, <code>thanh_ly</code></td>
+<td>Đóng hợp đồng</td>
+<td>Chỉ làm lịch sử; <strong>số liệu lấy từ <code>contracts.status/closed_*</code></strong></td>
+</tr>
+<tr>
+<td><code>mo_lai</code></td>
+<td>Mở lại</td>
+<td>Lịch sử</td>
+</tr>
+<tr>
+<td><code>sua</code></td>
+<td>Sửa thông tin</td>
+<td>Lịch sử (cũ → mới)</td>
+</tr>
+<tr>
+<td><code>huy</code></td>
+<td>Hủy</td>
+<td>Lịch sử (lý do)</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote class=""><span class="bt">Ghi chú</span>
+<p>Vì báo cáo chuộc/thanh lý dựa trên <code>contracts.status</code> chứ không cộng theo <code>events</code>, "Mở lại" tự động bỏ khoản đó khỏi báo cáo.</p>
+</blockquote>
+<h3 id="2-3-rang-buoc-nghiep-vu-nam-o-code-khong-co-trong-ddl">2.3 Ràng buộc nghiệp vụ nằm ở code (không có trong DDL)<a class="a" href="#2-3-rang-buoc-nghiep-vu-nam-o-code-khong-co-trong-ddl">#</a></h3>
+<ul>
+<li>Phải có ít nhất một trong <code>bks</code>, <code>so_khung</code>, <code>so_may</code> khi lập/sửa.</li>
+<li>Chỉ gia hạn/chuộc/thanh lý khi <code>status = dang_cam</code>.</li>
+<li>Không mở lại hợp đồng <code>huy</code>; không sửa hợp đồng <code>huy</code>; hủy phải có lý do.</li>
+<li>Khóa ngoại được bật (<code>PRAGMA foreign_keys=ON</code>) và không có <code>ON DELETE CASCADE</code>: <code>delete_hard</code> phải xóa <code>events</code> trước rồi mới xóa <code>contracts</code>.</li>
+</ul>
+<h2 id="3-du-lieu-ngoai-sqlite">3. Dữ liệu ngoài SQLite<a class="a" href="#3-du-lieu-ngoai-sqlite">#</a></h2>
+<pre><code>data/
+├── contracts.db                 # CSDL chính
+├── settings.json                # cài đặt tiệm + PIN đã băm (pin_hash, pin_salt)
+├── offsite.json                 # thư mục sao lưu ngoài (nếu đã cấu hình)
+├── anh/&lt;mã hợp đồng&gt;/
+│   ├── cccd-sau.jpg             # JPEG ~70%, cạnh dài ≤ 1280 px (~150–250 KB)
+│   └── ca-vet.jpg
+└── backup/
+    ├── contracts-YYYYMMDD.db    # 1 bản/ngày, giữ 30 bản gần nhất
+    └── truoc-khoi-phuc-*.db     # bản tự lưu trước mỗi lần khôi phục, giữ 5 bản
+.run/                            # trạng thái chạy (pid, cổng, cấu hình in print.json) — không phải dữ liệu nghiệp vụ
+logs/server.log                  # nhật ký server
+</code></pre>
+<p>Biến môi trường đổi vị trí dữ liệu (dùng cho thử nghiệm): <code>SCAN_DB</code>, <code>SCAN_IMAGES</code>, <code>SCAN_SETTINGS</code>.</p>
+<h3 id="don-anh">Dọn ảnh<a class="a" href="#don-anh">#</a></h3>
+<p>Ảnh của hợp đồng đã chuộc/thanh lý/hủy bị xóa sau <code>anh_giu_ngay</code> ngày (tính từ <code>closed_at</code>). Xóa hẳn hợp đồng cũng xóa thư mục ảnh của nó.</p>
+<h3 id="sao-luu">Sao lưu<a class="a" href="#sao-luu">#</a></h3>
+<ul>
+<li><code>contracts.backup()</code> dùng API backup của SQLite (an toàn khi đang ghi). Chạy tự động mỗi ngày (vòng lặp nền) và ngay sau mỗi thay đổi (sửa/hủy/chuộc... qua <code>_backup_soon</code>).</li>
+<li>Gọi lại trong ngày thì <strong>ghi đè</strong> bản của ngày đó; chỉ giữ 30 bản mới nhất.</li>
+<li>Khôi phục (<code>restore</code>) kiểm tra bản sao hợp lệ, <strong>tự lưu bản hiện tại</strong> thành <code>truoc-khoi-phuc-*.db</code> rồi mới ghi đè.</li>
+<li>Sao lưu ngoài máy: cấu hình một thư mục (USB, Google Drive đồng bộ, ổ mạng) — mỗi lần sao lưu sẽ chép thêm sang đó.</li>
+</ul>
+<h2 id="4-lenh-in-ram">4. Lệnh in (RAM)<a class="a" href="#4-lenh-in-ram">#</a></h2>
+<p>Lớp <code>JobStore</code> (<code>backend/jobs.py</code>), không ghi đĩa:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Trường</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Chuỗi hex ngẫu nhiên (<code>secrets.token_hex(5)</code>)</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td><code>cho_in</code>, <code>dang_in</code>, <code>da_gui</code>, <code>da_ra_giay</code>, <code>loi</code></td>
+</tr>
+<tr>
+<td><code>bks</code>, <code>chu</code></td>
+<td>Biển số, tên chủ xe (che bớt nếu chưa nhập PIN)</td>
+</tr>
+<tr>
+<td><code>snapshot</code></td>
+<td>Bản chụp dữ liệu hồ sơ (tối đa 40 khóa, mỗi giá trị ≤ 500 ký tự) dùng để in lại</td>
+</tr>
+<tr>
+<td>giới hạn</td>
+<td>Tối đa 30 lệnh, tự xóa sau 12 giờ, mất khi khởi động lại</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="5-truy-van-tieu-bieu-de-kiem-tra-nhanh-bang-sqlite3">5. Truy vấn tiêu biểu (để kiểm tra nhanh bằng <code>sqlite3</code>)<a class="a" href="#5-truy-van-tieu-bieu-de-kiem-tra-nhanh-bang-sqlite3">#</a></h2>
+<pre><code class="language-sql">-- Hợp đồng đang cầm sắp/đã quá hạn
+SELECT ma, ho_ten, bks, den_ngay FROM contracts
+WHERE status='dang_cam' AND den_ngay &lt;= date('now','+3 day') ORDER BY den_ngay;
+
+-- Vốn đang bỏ ra
+SELECT COUNT(*), COALESCE(SUM(so_tien),0) FROM contracts WHERE status='dang_cam';
+
+-- Lịch sử một hợp đồng
+SELECT at, type, days, amount, note FROM events
+WHERE contract_id=(SELECT id FROM contracts WHERE ma='HD2611-0001') ORDER BY id;
+</code></pre>
+<blockquote class="warn"><span class="bt">Lưu ý</span>
+<p>Mở DB bằng công cụ ngoài khi server đang chạy chỉ nên <strong>đọc</strong>. Muốn sửa dữ liệu, dùng chức năng trong app để có lịch sử và sao lưu.</p>
+</blockquote></article><div class="pager"><a href="01_NGHIEP_VU.html"><small>← Trước</small>Nghiệp vụ</a><a href="03_KIEN_TRUC_VA_API.html"><small>Tiếp →</small>Kiến trúc & API</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

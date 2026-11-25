@@ -1,0 +1,383 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiểm thử và biên bản bàn giao · ScanApp</title><link rel="stylesheet" href="assets/doc.css"></head><body>
+<div id="prog"></div><div class="scrim"></div>
+<header class="top"><button aria-label="Mở menu">☰</button><b>Kiểm thử và biên bản bàn giao</b></header>
+<aside class="side"><a class="logo" href="index.html"><i>S</i><span><b>ScanApp</b><small>Hồ sơ bàn giao</small></span></a>
+<nav class="nav"><a class="n" href="index.html"><em>⌂</em>Tổng quan</a><a class="n" href="01_NGHIEP_VU.html"><em>1</em>Nghiệp vụ</a><a class="n" href="02_ERD.html"><em>2</em>ERD & dữ liệu</a><a class="n" href="03_KIEN_TRUC_VA_API.html"><em>3</em>Kiến trúc & API</a><a class="n" href="04_HUONG_DAN_SU_DUNG.html"><em>4</em>Hướng dẫn sử dụng</a><a class="n" href="05_VAN_HANH_CAI_DAT.html"><em>5</em>Vận hành & cài đặt</a><a class="n on" href="06_KIEM_THU_VA_BAN_GIAO.html"><em>6</em>Kiểm thử & bàn giao</a><div class="toc"><a href="#1-kiem-thu-da-thuc-hien">1. Kiểm thử đã thực hiện</a><a href="#2-chua-the-kiem-chung-can-nguoi-that-thiet-bi-that">2. Chưa thể kiểm chứng (cần người thật / thiết bị thật)</a><a href="#3-gioi-han-va-rui-ro-da-biet">3. Giới hạn và rủi ro đã biết</a><a href="#4-checklist-nghiem-thu-lam-mot-lan-truoc-khi-dung-that">4. Checklist nghiệm thu (làm một lần trước khi dùng thật)</a><a href="#5-viec-nen-lam-tiep-de-xuat-uu-tien">5. Việc nên làm tiếp (đề xuất ưu tiên)</a><a href="#6-bien-ban-ban-giao">6. Biên bản bàn giao</a></div><a class="n" href="KE_HOACH_TOI_UU.html"><em>★</em>Kế hoạch tối ưu</a></nav><button class="tbtn">◐ Sáng / Tối</button><div class="sidefoot">Cập nhật 22/11/2026<br>In trang này (Ctrl/Cmd+P) để xuất PDF.</div></aside>
+<main><div class="wrap"><div class="hero"><div class="crumb">Tài liệu 06</div><h1>Kiểm thử và biên bản bàn giao</h1><p class="lead">Ngày rà soát cuối: <strong>22/11/2026</strong>. Mọi kết quả dưới đây là kết quả thực tế của đợt rà soát này; mục nào chưa kiểm chứng được ghi rõ.</p><div class="meta"><span class="pill">⏱ 9 phút đọc</span><span class="pill">👤 Tất cả</span></div></div>
+<article>
+<h2 id="1-kiem-thu-da-thuc-hien">1. Kiểm thử đã thực hiện<a class="a" href="#1-kiem-thu-da-thuc-hien">#</a></h2>
+<h3 id="1-1-test-tu-dong-backend">1.1 Test tự động backend<a class="a" href="#1-1-test-tu-dong-backend">#</a></h3>
+<p>Chạy: <code>cd backend &amp;&amp; ../.venv/bin/python selfcheck.py</code> (hoặc chạy từng file <code>test_*.py</code>; <code>scripts/run.*</code> tự gọi trước mỗi lần khởi động).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>File</th>
+<th>Phạm vi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_contracts.py</code></td>
+<td>Lập hợp đồng, chống trùng, gia hạn, chuộc, thanh lý, mở lại, sửa, hủy, <strong>xóa hẳn</strong>, báo cáo, cảnh báo trùng, sao lưu/khôi phục, PIN, ảnh</td>
+</tr>
+<tr>
+<td><code>test_jobs.py</code></td>
+<td>Hàng đợi lệnh in, giới hạn, hết hạn</td>
+</tr>
+<tr>
+<td><code>test_parse.py</code></td>
+<td>Phân tích chữ OCR → trường CCCD/cà vẹt</td>
+</tr>
+<tr>
+<td><code>test_validators.py</code></td>
+<td>Chuẩn hóa/kiểm tra chéo CCCD, biển số, số khung, ngày, số tiền bằng chữ</td>
+</tr>
+<tr>
+<td><code>test_printers.py</code>, <code>test_printing.py</code></td>
+<td>Trạng thái máy in, dựng lệnh in</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Kết quả lần cuối:</strong> <code>selfcheck.py</code> báo <strong>81 mục ✓, "ĐẠT: 0 test hỏng"</strong>; kiểm cú pháp tất cả <code>frontend/js/*.js</code> bằng <code>node --check</code>: không lỗi.</p>
+<blockquote class="warn"><span class="bt">Lưu ý</span>
+<p>Lưu ý: <code>.gitignore</code> đang loại <code>backend/test_*.py</code> khỏi Git (chứa chuỗi mẫu giống dữ liệu thật). Nếu cần giao bộ test cho người khác, chép riêng hoặc ẩn danh hóa dữ liệu mẫu rồi bỏ khỏi <code>.gitignore</code>.</p>
+</blockquote>
+<h3 id="1-2-kiem-thu-giao-dien-tu-dong-trinh-duyet-headless">1.2 Kiểm thử giao diện tự động (trình duyệt headless)<a class="a" href="#1-2-kiem-thu-giao-dien-tu-dong-trinh-duyet-headless">#</a></h3>
+<p>Dùng Puppeteer + Chrome thật, 3 cỡ màn hình: điện thoại 390×844, máy tính 1440×900, máy tính bảng 820×1180; ngoài ra iPhone SE 375×667 cho màn camera. Các việc đã kiểm:</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Hạng mục</th>
+<th>Kết quả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quét toàn bộ màn (Hồ sơ mới, Máy in, Hợp đồng, Báo cáo, Cài đặt) tìm: tràn ngang, nút/ô ngoài màn hình, nút không tên, ô không nhãn, ảnh thiếu <code>alt</code>, chữ &lt; 11px, chữ bị cắt</td>
+<td>Không có lỗi thật; các cảnh báo còn lại là <strong>báo nhầm</strong> (vùng chạm đã được mở rộng vô hình ≥ 44px; cỡ chữ &lt; 16px chỉ áp dụng cho máy tính; nút nằm trong hộp thu gọn)</td>
+</tr>
+<tr>
+<td>Lỗi JavaScript trên trang (pageerror)</td>
+<td>0 lỗi ở mọi màn</td>
+</tr>
+<tr>
+<td>Luồng "tạo hồ sơ → in" trên điện thoại (dữ liệu tạm)</td>
+<td>Hiện hộp thoại "Hồ sơ HD2611-0001 đã được tạo và đang in", dữ liệu về rỗng, quay về màn quét</td>
+</tr>
+<tr>
+<td>Hộp xác nhận <strong>Xóa hẳn</strong>: gõ sai mã → báo "Mã chưa khớp"; gõ đúng → hợp đồng biến khỏi danh sách, thư mục ảnh được dọn</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Màn camera xem lại với 9 ô, trên 375×667 và 390×844</td>
+<td>Hiện đủ, không cuộn (<code>scrollHeight = clientHeight</code>)</td>
+</tr>
+<tr>
+<td>Khung cảnh báo trùng (dữ liệu giả 3 cảnh báo)</td>
+<td>Gộp 1 khung, 2 nút xem hợp đồng nằm cạnh nhau</td>
+</tr>
+<tr>
+<td>Quyền truy cập (gọi hàm với yêu cầu giả lập "qua tunnel" / "máy chủ")</td>
+<td>Đúng: danh sách/chi tiết cần PIN; sửa/hủy/xóa/báo cáo/sao lưu chỉ máy chủ</td>
+</tr>
+<tr>
+<td>Gộp CSS 25 → 5 file, rồi bỏ 236 khai báo bị ghi đè</td>
+<td>So 31 ảnh chụp trước/sau: giống hệt từng điểm ảnh (trừ 2 điểm góc bo lệch 1/255)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Ảnh chụp trước/sau khi gộp CSS: <code>docs/css-truoc/</code>, <code>docs/css-sau/</code>.</p>
+<h3 id="1-3-ra-soat-ui-ux-va-logic-tinh-trang">1.3 Rà soát UI/UX và logic — tình trạng<a class="a" href="#1-3-ra-soat-ui-ux-va-logic-tinh-trang">#</a></h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Nhóm</th>
+<th>Tình trạng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bố cục điện thoại/máy tính, thanh tab, bước 1/2</td>
+<td><span class="b ok">Đạt</span> (kiểm bằng ảnh chụp)</td>
+</tr>
+<tr>
+<td>Cỡ chữ ô nhập ≥ 16px trên điện thoại (không bị iOS phóng to)</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Vùng chạm ≥ 44px</td>
+<td><span class="b ok">Đạt</span> (mở rộng vô hình)</td>
+</tr>
+<tr>
+<td>Tiêu chí trạng thái (Đã đọc / Cần soát / Thiếu), tooltip xác nhận</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Cảnh báo trùng, hộp thoại sau khi tạo, reset về màn quét</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Bảo mật theo quyền (PIN / chỉ máy chủ), mã lệnh in ngẫu nhiên, che dữ liệu khi chưa PIN</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Tách mã <code>app.py</code> (1374 → 274 dòng) thành các module</td>
+<td><span class="b ok">Đạt</span></td>
+</tr>
+<tr>
+<td>Nhật ký/kiểm lỗi <code>except Exception:</code> nuốt lỗi (≈ 12 chỗ)</td>
+<td><span class="b bad">Còn tồn</span> (xem §3)</td>
+</tr>
+<tr>
+<td><code>parse_cavet</code> (86 dòng), <code>parse_cccd</code> (61 dòng) quá dài</td>
+<td><span class="b bad">Còn tồn</span></td>
+</tr>
+<tr>
+<td>Lint tự động (ruff / eslint)</td>
+<td><span class="b bad">Chưa có</span></td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="2-chua-the-kiem-chung-can-nguoi-that-thiet-bi-that">2. Chưa thể kiểm chứng (cần người thật / thiết bị thật)<a class="a" href="#2-chua-the-kiem-chung-can-nguoi-that-thiet-bi-that">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Mục</th>
+<th>Vì sao chưa</th>
+<th>Cách nghiệm thu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iPhone/Android thật: camera, tự chụp, độ nét, tunnel</td>
+<td>Không có thiết bị</td>
+<td>Làm theo checklist §4, mục "Điện thoại"</td>
+</tr>
+<tr>
+<td>Độ chính xác OCR trên giấy tờ thật hàng loạt</td>
+<td>Chỉ có số mẫu nhỏ</td>
+<td>Quét ≥ 30 bộ giấy tờ thật, đếm ô sai theo từng loại</td>
+</tr>
+<tr>
+<td>In thật: vị trí chữ trên tờ mẫu, giấy ra, chế độ <code>escp</code></td>
+<td>Không in ra giấy; <code>template.json</code> chưa hiệu chỉnh</td>
+<td>§5 + <a href="05_VAN_HANH_CAI_DAT.html">05 §6</a></td>
+</tr>
+<tr>
+<td>Windows (cài đặt, tác vụ nền, tunnel, in)</td>
+<td>Chưa chạy trên máy Windows thật</td>
+<td>Cài thử trên 1 máy Windows trước khi dùng thật</td>
+</tr>
+<tr>
+<td>Chịu tải/nhiều người cùng lúc</td>
+<td>Chưa đo (thiết kế cho 1 tiệm, vài thiết bị)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Truy cập dữ liệu bằng nhiều trình duyệt cùng lúc khi sửa</td>
+<td>Có khóa luồng ở backend, chưa thử tranh chấp thật</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-gioi-han-va-rui-ro-da-biet">3. Giới hạn và rủi ro đã biết<a class="a" href="#3-gioi-han-va-rui-ro-da-biet">#</a></h2>
+<p><strong>Nghiệp vụ</strong>
+- Không có tài khoản từng người: PIN dùng chung, không biết <strong>ai</strong> làm thao tác nào (lịch sử chỉ ghi thời điểm).
+- Không tính lãi/phí chậm tự động; phí do người dùng nhập. "Sớm/đúng/trễ hạn" chỉ là ghi chú đối chiếu.
+- Không có quản lý kho sau thanh lý, không xuất chứng từ kế toán (chỉ CSV).
+- Lệnh in nằm trong RAM; restart là mất (dùng "In lại giấy tờ" từ hợp đồng).
+- Trạng thái in chỉ biết đã gửi cho hệ điều hành, không biết giấy ra thật.</p>
+<p><strong>OCR</strong>
+- RapidOCR <strong>không có dấu tiếng Việt</strong> → họ tên từ OCR luôn "Cần soát"; ưu tiên lấy từ QR.
+- QR cà vẹt chỉ có biển số; số khung/số máy phải OCR (hay nhầm O/0, I/1, B/8, F/P).
+- QR thẻ căn cước mới (2024+) có thể chỉ chứa số định danh.
+- Chỉnh số khung/số loại theo số máy chỉ cho <strong>Honda</strong>; hãng khác soát tay.
+- Màu sơn chỉ tự điền khi mọi chữ đều là tên màu.
+- Ngưỡng "đủ nét" (khung xanh/đỏ) chưa chỉnh trên điện thoại thật.</p>
+<p><strong>Kỹ thuật</strong>
+- SQLite một file: tốt cho 1 tiệm; không dành cho nhiều máy chủ ghi đồng thời.
+- Chưa có migration có phiên bản (chỉ <code>ADD COLUMN</code> có điều kiện).
+- ≈ 12 chỗ <code>except Exception:</code> nuốt lỗi — nên ghi log (<code>logging.exception</code>).
+- Link tunnel công khai và đổi mỗi lần chạy lại; an toàn dựa vào PIN.
+- Không có sao lưu tự động cho ảnh <code>data/anh/</code>.
+- Server nghe <code>0.0.0.0</code> — cân nhắc tường lửa nếu mạng nội bộ không tin cậy.</p>
+<h2 id="4-checklist-nghiem-thu-lam-mot-lan-truoc-khi-dung-that">4. Checklist nghiệm thu (làm một lần trước khi dùng thật)<a class="a" href="#4-checklist-nghiem-thu-lam-mot-lan-truoc-khi-dung-that">#</a></h2>
+<p>Đánh dấu ✅ khi đạt; ghi chú lỗi vào cột bên phải.</p>
+<h3 id="may-chu">Máy chủ<a class="a" href="#may-chu">#</a></h3>
+<ul class="chk">
+<li><input type="checkbox"><span>Cài bằng <code>RUN_THIS_FILE_*</code>, biểu tượng ScanApp mở được, hiện QR và link https</span></li>
+<li><input type="checkbox"><span><code>selfcheck</code> báo "ĐẠT: 0 test hỏng"</span></li>
+<li><input type="checkbox"><span>Đặt PIN ở Cài đặt; đăng nhập sai PIN báo lỗi; sai 5 lần bị khóa 5 phút</span></li>
+<li><input type="checkbox"><span>Đặt số ngày/lệ phí/ngày giữ ảnh mặc định</span></li>
+<li><input type="checkbox"><span>Sao lưu ngay → có file trong <code>data/backup/</code>; thử <strong>Khôi phục</strong> một bản và kiểm tra dữ liệu</span></li>
+<li><input type="checkbox"><span>Đặt thư mục sao lưu ngoài (USB/Drive) và thấy file xuất hiện</span></li>
+</ul>
+<h3 id="dien-thoai">Điện thoại<a class="a" href="#dien-thoai">#</a></h3>
+<ul class="chk">
+<li><input type="checkbox"><span>Quét QR, mở link https, camera hoạt động, cho phép quyền</span></li>
+<li><input type="checkbox"><span>Chụp CCCD mặt sau + cà vẹt: màn xem lại hiện đủ ô, không phải cuộn</span></li>
+<li><input type="checkbox"><span>Ô "Cần soát": bấm "!" → "Xác nhận đã đúng" chuyển thành "Đã đọc"</span></li>
+<li><input type="checkbox"><span>Nhập thiếu số tiền cầm → không cho "Tiếp tục"/in, báo đúng ô còn thiếu</span></li>
+<li><input type="checkbox"><span>Tạo hồ sơ → hộp thoại "đã được tạo và đang in" → quay về màn quét sạch dữ liệu</span></li>
+<li><input type="checkbox"><span>Tab Hợp đồng đòi PIN; sau PIN xem được danh sách, chi tiết, gia hạn/chuộc/thanh lý</span></li>
+<li><input type="checkbox"><span>Tab Hợp đồng trên điện thoại <strong>không</strong> thấy tiền vốn, báo cáo, sửa/hủy/xóa/sao lưu</span></li>
+<li><input type="checkbox"><span>Để yên 5 phút → phiên tự khóa</span></li>
+</ul>
+<h3 id="nghiep-vu-may-chu-nen-lam-bang-ho-so-thu-roi-xoa-han">Nghiệp vụ (máy chủ, nên làm bằng hồ sơ thử rồi <strong>Xóa hẳn</strong>)<a class="a" href="#nghiep-vu-may-chu-nen-lam-bang-ho-so-thu-roi-xoa-han">#</a></h3>
+<ul class="chk">
+<li><input type="checkbox"><span>Lập hợp đồng A; lập lại y hệt → báo "đã có sẵn", không tạo thêm</span></li>
+<li><input type="checkbox"><span>Lập hợp đồng B cùng số khung với A → cảnh báo cam "Xe này đã có trong hệ thống"</span></li>
+<li><input type="checkbox"><span>Gia hạn A (hạn mới đúng quy tắc, phí vào doanh thu)</span></li>
+<li><input type="checkbox"><span>Gia hạn hợp đồng quá hạn → hạn mới tính từ hôm nay</span></li>
+<li><input type="checkbox"><span>Chuộc A trả = gốc + 100.000 → doanh thu tăng 100.000, thu hồi gốc = gốc</span></li>
+<li><input type="checkbox"><span>Mở lại A → báo cáo bỏ khoản chuộc</span></li>
+<li><input type="checkbox"><span>Thanh lý B với giá bán khác gốc → lãi/lỗ đúng; thanh lý không nhập giá → "chưa có giá"</span></li>
+<li><input type="checkbox"><span>Hủy hợp đồng không nhập lý do → bị từ chối; có lý do → biến mất khỏi danh sách/báo cáo</span></li>
+<li><input type="checkbox"><span><strong>Xóa hẳn</strong>: gõ sai mã → từ chối; đúng → xóa; hồ sơ xuất hiện lại sau khi <strong>Khôi phục</strong> bản sao lưu trước đó</span></li>
+<li><input type="checkbox"><span>Đối chiếu bảng số liệu trong Báo cáo với tính tay ở <a href="01_NGHIEP_VU.html">01_NGHIEP_VU.md §4</a></span></li>
+</ul>
+<h3 id="in">In<a class="a" href="#in">#</a></h3>
+<ul class="chk">
+<li><input type="checkbox"><span>In một hợp đồng thử lên <strong>tờ mẫu thật</strong>: mọi ô nằm đúng chỗ (nếu lệch → hiệu chỉnh <code>template.json</code>/<code>dx</code>,<code>dy</code>, đặt <code>calibrated: true</code>)</span></li>
+<li><input type="checkbox"><span>Hết giấy/ngắt máy in → lệnh báo <strong>Lỗi</strong> có lý do, không in đôi khi in lại</span></li>
+<li><input type="checkbox"><span>Tab Máy in: xem trước, in lại, hủy, xóa lệnh</span></li>
+<li><input type="checkbox"><span>Tên có dấu và số tiền bằng chữ in đúng (chế độ <code>driver</code>)</span></li>
+</ul>
+<h3 id="van-hanh">Vận hành<a class="a" href="#van-hanh">#</a></h3>
+<ul class="chk">
+<li><input type="checkbox"><span>Khởi động lại máy tính → ScanApp tự chạy (Windows) / chạy lại bằng biểu tượng (macOS)</span></li>
+<li><input type="checkbox"><span>Cập nhật mã giả lập lỗi → script quay về bản cũ, server vẫn chạy</span></li>
+</ul>
+<h2 id="5-viec-nen-lam-tiep-de-xuat-uu-tien">5. Việc nên làm tiếp (đề xuất ưu tiên)<a class="a" href="#5-viec-nen-lam-tiep-de-xuat-uu-tien">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Ưu tiên</th>
+<th>Việc</th>
+<th>Lý do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Hiệu chỉnh <code>template.json</code> bằng tờ mẫu thật</td>
+<td>In đúng là yêu cầu cốt lõi</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Chạy checklist §4 trên điện thoại thật và Windows thật</td>
+<td>Phần chưa kiểm chứng được</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Thay <code>except Exception:</code> nuốt lỗi bằng log cụ thể</td>
+<td>Dễ tìm lỗi khi vận hành</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cho phép lưu <code>test_*.py</code> (ẩn danh dữ liệu mẫu) vào Git; thêm ruff/eslint</td>
+<td>Người sau không mất bộ test</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Sao lưu ảnh <code>data/anh/</code> theo thư mục sao lưu ngoài</td>
+<td>Tránh mất ảnh khi hỏng máy</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tách <code>parse_cavet</code>/<code>parse_cccd</code> thành hàm nhỏ có test</td>
+<td>Dễ bảo trì OCR</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tài khoản/nhật ký theo người dùng</td>
+<td>Biết ai làm thao tác nào</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="6-bien-ban-ban-giao">6. Biên bản bàn giao<a class="a" href="#6-bien-ban-ban-giao">#</a></h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Hạng mục</th>
+<th>Nội dung bàn giao</th>
+<th>Đã có?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mã nguồn</td>
+<td>Repo <code>scan-app</code> (backend, frontend, scripts, macos, windows, assets)</td>
+<td><span class="b ok">✅</span> (có thay đổi chưa commit trong đợt này)</td>
+</tr>
+<tr>
+<td>Dữ liệu</td>
+<td>Thư mục <code>data/</code> (database, ảnh, sao lưu, cài đặt) — <strong>không nằm trong Git</strong></td>
+<td><span class="b ok">✅ chuyển riêng</span></td>
+</tr>
+<tr>
+<td>Cấu hình</td>
+<td><code>.run/print.json</code> (nếu có), PIN (đặt lại trên máy mới)</td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Tài liệu nghiệp vụ</td>
+<td><a href="01_NGHIEP_VU.html">01_NGHIEP_VU.md</a></td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>ERD / từ điển dữ liệu</td>
+<td><a href="02_ERD.html">02_ERD.md</a></td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Kiến trúc / API</td>
+<td><a href="03_KIEN_TRUC_VA_API.html">03_KIEN_TRUC_VA_API.md</a></td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Hướng dẫn sử dụng</td>
+<td><a href="04_HUONG_DAN_SU_DUNG.html">04_HUONG_DAN_SU_DUNG.md</a></td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Vận hành / cài đặt</td>
+<td><a href="05_VAN_HANH_CAI_DAT.html">05_VAN_HANH_CAI_DAT.md</a></td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Kiểm thử / nghiệm thu</td>
+<td>Tài liệu này</td>
+<td><span class="b ok">✅ Có</span></td>
+</tr>
+<tr>
+<td>Bộ test tự động</td>
+<td><code>backend/test_*.py</code> — <strong>chỉ trên máy dev, không có trên Git</strong></td>
+<td><span class="b warn">⚠️ chép riêng</span></td>
+</tr>
+<tr>
+<td>Tài khoản bên thứ ba</td>
+<td>Repo GitHub, (tùy chọn) Cloudflare tunnel không cần tài khoản</td>
+<td><span class="b info">ℹ️</span></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Điều kiện nhận bàn giao đề xuất:</strong> hoàn thành checklist §4 (ít nhất mục Máy chủ, Điện thoại, Nghiệp vụ, In), chấp nhận các giới hạn ở §3, ký xác nhận.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Bên giao</th>
+<th>Bên nhận</th>
+<th>Ngày</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div></article><div class="pager"><a href="05_VAN_HANH_CAI_DAT.html"><small>← Trước</small>Vận hành & cài đặt</a><a href="KE_HOACH_TOI_UU.html"><small>Tiếp →</small>Kế hoạch tối ưu</a></div><footer>ScanApp · Hồ sơ bàn giao dự án</footer></div></main>
+<script src="assets/doc.js"></script></body></html>

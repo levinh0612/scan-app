@@ -2,6 +2,7 @@
 tự xoá sau 12 giờ, tối đa 30 lệnh. Bản chụp dữ liệu (snapshot) chỉ dùng để 'In lại'."""
 from __future__ import annotations
 
+import secrets
 import threading
 import time
 
@@ -28,7 +29,6 @@ class JobStore:
         self._clock = clock
         self._lock = threading.Lock()
         self._jobs: dict[str, dict] = {}
-        self._seq = 0
 
     def _prune(self) -> None:
         now = self._clock()
@@ -45,9 +45,8 @@ class JobStore:
         if status not in STATUSES:
             raise ValueError("Trạng thái không hợp lệ")
         with self._lock:
-            self._seq += 1
             now = self._clock()
-            job = {"id": f"J{self._seq}", "bks": str(bks)[:30], "xe": str(xe)[:60], "chu": str(chu)[:80],
+            job = {"id": f"J{secrets.token_hex(5)}", "bks": str(bks)[:30], "xe": str(xe)[:60], "chu": str(chu)[:80],
                    "status": status, "created": now, "updated": now,
                    "lan": 1 if status == "dang_in" else 0, "note": "", "snapshot": clean_snapshot(snapshot)}
             self._jobs[job["id"]] = job

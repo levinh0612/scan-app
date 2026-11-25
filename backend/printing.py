@@ -173,6 +173,21 @@ def print_snapshot(snap: dict, jid: str, cfg: dict | None = None, info: dict | N
     return _submit_driver(png, printer, f"ScanApp-{jid}"), printer
 
 
+def print_image(img, jid: str, cfg: dict | None = None, info: dict | None = None) -> str:
+    """In một ảnh đã vẽ (biên nhận, in thử) qua driver máy in. Trả về tên máy in."""
+    cfg = cfg or load_config()
+    if cfg["mode"] == "escp":
+        raise PrintError("Máy in kim (ESC/P) chỉ in được phiếu hồ sơ, chưa in được mẫu này. Hãy dùng máy in có driver.")
+    printer = pick_printer(cfg, info or printers.cached(ttl=0))
+    png = _png_path(jid)
+    try:
+        render.save_png(img, png)
+        _submit_driver(png, printer, f"ScanApp-{jid}")
+    finally:
+        png.unlink(missing_ok=True)
+    return printer
+
+
 def run_job(store, jid: str, snap: dict, sleep=time.sleep, cfg: dict | None = None) -> None:
     """Chạy trong luồng nền: gửi lệnh in rồi theo dõi hàng đợi → da_gui (lệnh đã rời hàng đợi) hoặc loi + lý do."""
     try:
