@@ -177,6 +177,22 @@ File test và benchmark chỉ có trên máy phát triển, không nằm trong r
 
 ## 8. Giới hạn đã biết
 
+### Thuật toán đọc cà vẹt (OCR)
+
+Một lần OCR hay nhầm (O/0, I/1, B/8…) nên app đọc **nhiều lượt rồi bỏ phiếu**:
+
+1. **Nắn nghiêng:** chạy OCR một lượt để lấy góc nghiêng trung vị của các dòng chữ dài; nghiêng từ 1° đến 25° thì xoay ảnh cho chữ nằm ngang (`ocr_parse.deskew`).
+2. **4 lượt đọc**, mỗi lượt xử lý ảnh khác nhau (`CAVET_RUNS`): `clahe` (tăng tương phản), `raw` (ảnh gốc), `up` (phóng 1,5 lần), `flat` (làm phẳng nền).
+3. **Bỏ phiếu từng ô** (`multiread.vote`): giá trị được nhiều lượt đọc trùng nhất thắng. Hoà phiếu thì nghiêng về lượt `clahe`, không so độ tin cậy giữa các lượt.
+4. **Chốt trạng thái:**
+   - Mọi lượt trùng nhau và đúng khuôn dạng → `ok`.
+   - Lượt đọc bất đồng → `check` (vàng), kèm giá trị của các lượt khác.
+5. **Số loại:** nếu một lượt đọc ra đúng tên xe trong `KNOWN_MODELS` thì chọn tên đó (`pick_known_model`).
+6. **Màu sơn:** dòng này hay bị bỏ sót nên có lượt dò riêng vùng ngay dưới dòng "Nhãn hiệu"; lượt nào đọc được nhiều màu hơn thì đúng hơn.
+7. **Ảnh đối chiếu:** cắt ảnh nhỏ quanh chữ của từng ô (`multiread.attach_crops`) để người dùng so với giấy thật.
+
+### Giới hạn
+
 - OCR (RapidOCR) **không có dấu tiếng Việt**: họ tên từ OCR luôn bị đánh dấu vàng. Ưu tiên lấy từ QR.
 - QR cà vẹt chỉ cho biển số, không có số khung/số máy → phải OCR (hay nhầm O/0, I/1, B/8, F/P).
 - QR CCCD thẻ căn cước mới (2024+) có thể chỉ chứa số định danh.
